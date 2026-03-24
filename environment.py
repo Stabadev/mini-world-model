@@ -31,7 +31,7 @@ class GridWorld:
     }
 
     def __init__(self):
-        self.size = 7
+        self.size = 10
         self.reset()
 
     def reset(self):
