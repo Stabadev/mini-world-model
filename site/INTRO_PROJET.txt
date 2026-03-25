@@ -1,0 +1,27 @@
+Mon attention a été attirée par la présence accrue de Yann LeCun dans les médias, à la suite de la création de son laboratoire AMI (Advanced Machine Intelligence). LeCun, récipiendaire du prix Turing et longtemps Chief AI Scientist chez Meta, y défend une vision radicalement différente de l'IA actuelle : les grands modèles de langage ne suffisent pas à construire une intelligence générale.
+
+Je vous résume ici ses propos, tirés d'une interview par le journaliste Benjamin Duhamel dans l'émission "L'invité du 7h50" du 10 mars 2026 sur France Inter :
+
+« Le monde est beaucoup plus complexe que la langue. La langue, c'est finalement facile à manipuler. On a l'impression, en tant qu'humain, qu'une entité est intelligente si elle manipule la langue — mais on est trompé par cette capacité. Pourquoi la langue c'est simple ? C'est une séquence de symboles discrets. Or le monde réel est bien plus complexe, et le comprendre nécessite des techniques complètement différentes de celles qu'on utilise pour la langue.
+
+La question, c'est : comment faire en sorte que les machines apprennent le monde en l'observant, à la manière d'un jeune enfant, ou même d'un chat de gouttière ? »
+
+L'idée concrète qu'il propose :
+
+On prend une vidéo, on en masque des morceaux. On entraîne ensuite un système à produire une représentation abstraite de la vidéo complète à partir de celle qui a été corrompue. Ce faisant, le système apprend à "remplir les trous" — et donc à comprendre le monde.
+
+L'architecture qui incarne cette idée, ce sont les **modèles monde**.
+
+Le principe fondamental : une observation est passée dans un encodeur, qui la projette dans un espace latent — une représentation abstraite et compressée. Cette représentation est ensuite passée à un prédicteur, dont le rôle est d'anticiper la représentation abstraite qu'aurait produit l'encodeur à l'instant suivant.
+
+L'encodeur et le prédicteur s'entraînent conjointement : l'encodeur doit produire une représentation que le prédicteur peut anticiper ; le prédicteur doit anticiper ce que l'encodeur produira. C'est ce couplage qu'on appelle une **JEPA** — *Joint Embedding Predictive Architecture*.
+
+C'est ce que j'ai voulu explorer dans ce projet, à travers une implémentation minimale sur un monde simulé.
+
+Bonne lecture.
+
+---
+
+Sources :
+- France Inter : https://www.radiofrance.fr/franceinter/podcasts/l-invite-de-7h50/l-invite-de-7h50-du-mardi-10-mars-2026-6860645
+- YouTube : https://youtu.be/AFi1TPiB058?si=Wx6GzkcEh1kguJnA
