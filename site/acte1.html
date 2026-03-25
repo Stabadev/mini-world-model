@@ -805,9 +805,9 @@
 
   function makeScenarioWorld(def) {
     const w = new GridWorld();
-    w.agent = [...def.agent];
-    w.box   = [...def.box];
-    w.target= [...def.target];
+    w.agent = [...def.before.agent];
+    w.box   = [...def.before.box];
+    w.target= [...def.before.target];
     w.won   = w.eq(w.box, w.target);
     w.moves = 0;
     return w;
