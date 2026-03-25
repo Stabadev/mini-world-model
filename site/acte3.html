@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acte 3 — Ce que la machine a appris · Mini World Model</title>
+  <meta name="description" content="L'espace latent encode-t-il vraiment le monde ? PCA, sondes linéaires, et la révélation sur la relation boîte-cible." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+
+    /* ── PCA section ── */
+    .pca-images {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .pca-img-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--bg-soft);
+    }
+    .pca-img-card img {
+      width: 100%;
+      display: block;
+    }
+    .pca-img-caption {
+      padding: 0.75rem 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      border-top: 1px solid var(--border);
+    }
+    .pca-img-caption strong { color: var(--text); }
+
+    /* ── PCA variance bar ── */
+    .variance-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: 1.5rem 0;
+      padding: 1.25rem 1.5rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .var-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+    }
+    .var-label { width: 64px; color: var(--text-muted); font-weight: 500; text-align: right; font-family: monospace; }
+    .var-track {
+      flex: 1;
+      height: 22px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .var-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s ease;
+    }
+    .var-pct { width: 52px; font-weight: 600; color: var(--text); font-size: 0.83rem; }
+
+    /* ── probing ── */
+    .probe-filters {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .probe-filter-btn {
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.3rem 0.85rem;
+      border-radius: 100px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .probe-filter-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .probes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .probe-item {
+      display: grid;
+      grid-template-columns: 220px 1fr 60px;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.65rem 1rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: opacity 0.3s, border-color 0.2s;
+    }
+    .probe-item.highlight {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    .probe-item.dimmed { opacity: 0.35; }
+    .probe-item.warn {
+      border-color: #FCD34D;
+      background: #FFFBEB;
+    }
+    .probe-item.critical {
+      border-color: #FCA5A5;
+      background: #FEF2F2;
+    }
+
+    .probe-name { font-size: 0.875rem; font-weight: 500; color: var(--text); }
+    .probe-type-badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-reg { background: #DBEAFE; color: #1D4ED8; }
+    .badge-clf { background: #F3E8FF; color: #7C3AED; }
+
+    .probe-track {
+      position: relative;
+      height: 10px;
+      background: var(--border);
+      border-radius: 5px;
+      overflow: visible;
+    }
+    .probe-fill {
+      height: 100%;
+      border-radius: 5px;
+      width: 0;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .probe-fill.green  { background: #22C55E; }
+    .probe-fill.amber  { background: #F59E0B; }
+    .probe-fill.red    { background: #EF4444; }
+
+    /* random baseline tick for classifiers */
+    .probe-baseline {
+      position: absolute;
+      top: -3px;
+      width: 2px;
+      height: 16px;
+      background: #94A3B8;
+      border-radius: 1px;
+      left: 50%;
+    }
+    .probe-baseline-label {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      color: #94A3B8;
+      white-space: nowrap;
+    }
+
+    .probe-value { font-size: 0.9rem; font-weight: 700; font-family: monospace; text-align: right; }
+    .probe-value.green  { color: #15803D; }
+    .probe-value.amber  { color: #D97706; }
+    .probe-value.red    { color: #DC2626; }
+
+    /* ── revelation ── */
+    .reveal-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .rev-card {
+      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      border: 2px solid;
+      text-align: center;
+    }
+    .rev-card.good { border-color: #86EFAC; background: #F0FDF4; }
+    .rev-card.bad  { border-color: #FCA5A5; background: #FEF2F2; }
+    .rev-card .rev-metric {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .rev-card.good .rev-metric { color: #15803D; }
+    .rev-card.bad  .rev-metric { color: #DC2626; }
+    .rev-card .rev-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.4rem; }
+    .rev-card .rev-desc  { font-size: 0.83rem; color: var(--text-muted); line-height: 1.55; }
+
+    /* ── summary table ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin: 2rem 0;
+    }
+    .summary-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .summary-icon {
+      font-size: 1.2rem;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .summary-text { font-size: 0.875rem; line-height: 1.55; color: var(--text-muted); }
+    .summary-text strong { color: var(--text); }
+
+    /* ── act nav ── */
+    .act-nav {
+      display: flex;
+      justify-content: space-between;
+      padding: 3rem 0 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    .act-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.6rem 1.25rem;
+      border: 1.5px solid var(--accent-mid);
+      border-radius: var(--radius);
+      background: var(--accent-light);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .act-nav a:hover { background: #DBEAFE; border-color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .pca-images          { grid-template-columns: 1fr; }
+      .reveal-comparison   { grid-template-columns: 1fr; }
+      .summary-grid        { grid-template-columns: 1fr; }
+      .probe-item          { grid-template-columns: 1fr 60px; }
+      .probe-item .probe-track { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">Mini <span>World Model</span></a>
+      <ul class="nav-links">
+        <li><a href="acte1.html">Acte 1 — Environnement</a></li>
+        <li><a href="acte2.html">Acte 2 — Entraînement</a></li>
+        <li><a href="acte3.html" class="active">Acte 3 — Représentation</a></li>
+        <li><a href="acte4.html">Acte 4 — Limites</a></li>
+      </ul>
+      <a href="https://github.com/Stabadev/mini-world-model" class="nav-github" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <p class="eyebrow">Acte 3</p>
+      <h1>Ce que la machine<br>a vraiment appris</h1>
+      <p class="hero-lead">
+        La loss a convergé. Le modèle prédit bien dans l'espace latent.
+        Mais que contient cet espace, concrètement ?
+        Comprend-il la position de l'agent ? La relation entre la boîte et la cible ?
+        On va l'ausculter.
+      </p>
+    </section>
+
+    <!-- SECTION 1 : MÉTHODE -->
+    <section class="reveal">
+      <p class="eyebrow">La méthode</p>
+      <h2>Interroger le latent sans toucher au modèle</h2>
+
+      <p>
+        Après l'entraînement, l'encodeur produit un vecteur de 32 nombres
+        pour chaque état du monde. Ce vecteur, c'est la "compréhension" du modèle.
+        Pour savoir ce qu'il contient, on utilise une technique appelée
+        <strong>sondage linéaire</strong> (<em>linear probing</em>).
+      </p>
+
+      <p>
+        Le principe : on gèle le modèle — aucun poids ne change —
+        et on entraîne un simple modèle linéaire à prédire une propriété
+        à partir du vecteur latent. Si ça marche bien avec un modèle
+        <em>linéaire</em>, c'est que cette propriété est directement lisible
+        dans la représentation. Si ça échoue, soit elle n'est pas encodée,
+        soit elle l'est de façon non-linéaire et implicite.
+      </p>
+
+      <div class="insight-box">
+        <p>
+          La linéarité est la contrainte importante ici. Un réseau profond pourrait
+          extraire n'importe quelle information — même cachée — par des transformations
+          non-linéaires successives. Un modèle linéaire, lui, ne peut que lire
+          ce qui est explicitement présent dans les directions de l'espace.
+          C'est un test de "lisibilité directe".
+        </p>
+      </div>
+
+      <p>
+        On génère <strong>4 032 états</strong> aléatoires, on les encode,
+        et on entraîne des régressions (pour les positions continues)
+        et des classifieurs logistiques (pour les propriétés binaires)
+        sur un split 80/20.
+      </p>
+    </section>
+
+    <!-- SECTION 2 : PCA -->
+    <section class="reveal">
+      <p class="eyebrow">Analyse en composantes principales</p>
+      <h2>Un espace presque unidimensionnel</h2>
+
+      <p>
+        Avant le sondage, on réduit le vecteur latent 32D à 2 dimensions
+        par PCA pour le visualiser. Chaque point représente un état encodé.
+        On colore les points selon différentes propriétés pour voir
+        si une structure émerge.
+      </p>
+
+      <!-- Variance chart -->
+      <div class="variance-chart">
+        <div style="font-size:0.8rem;font-weight:600;color:var(--text-muted);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.06em">Variance expliquée par composante</div>
+        <div class="var-row">
+          <span class="var-label">PC1</span>
+          <div class="var-track">
+            <div class="var-fill" id="varPC1" style="background:#2563EB;width:0%"></div>
+          </div>
+          <span class="var-pct" id="varPC1pct">92.45%</span>
+        </div>
+        <div class="var-row">
+          <span class="var-label">PC2</span>
+          <div class="var-track">
+            <div class="var-fill" id="varPC2" style="background:#93C5FD;width:0%"></div>
+          </div>
+          <span class="var-pct" id="varPC2pct">1.55%</span>
+        </div>
+        <div class="var-row">
+          <span class="var-label">PC3–32</span>
+          <div class="var-track">
+            <div class="var-fill" id="varRest" style="background:#E2E8F0;width:0%"></div>
+          </div>
+          <span class="var-pct">6.00%</span>
+        </div>
+      </div>
+
+      <p>
+        Le résultat est frappant : <strong>92.45% de la variance totale
+        est concentrée dans la première composante principale</strong>.
+        Les 31 autres dimensions ne portent presque rien.
+        L'espace latent 32D s'est, en pratique, réduit à une ligne.
+      </p>
+
+      <p>
+        Ce n'est pas nécessairement un problème — un monde simple
+        peut s'organiser le long d'un axe principal.
+        Mais ça signifie que le modèle a trouvé une représentation
+        très compressée, peut-être trop pour les tâches de planification.
+      </p>
+
+      <!-- PCA images -->
+      <div class="pca-images">
+        <div class="pca-img-card">
+          <img src="../research/assets/03_latent_pca_v3.png"
+               alt="PCA colorée par position de l'agent"
+               loading="lazy" />
+          <div class="pca-img-caption">
+            <strong>Coloré par position de l'agent.</strong>
+            Un gradient est visible le long de PC1 pour la ligne (row),
+            mais la colonne (col) est plus diffuse.
+          </div>
+        </div>
+        <div class="pca-img-card">
+          <img src="../research/assets/03_latent_pca_box_v3.png"
+               alt="PCA colorée par position de la boîte"
+               loading="lazy" />
+          <div class="pca-img-caption">
+            <strong>Coloré par position de la boîte.</strong>
+            La structure est plus nette pour la boîte — lignes et colonnes
+            montrent toutes deux un gradient organisé.
+          </div>
+        </div>
+      </div>
+
+      <p>
+        Les points ne sont pas aléatoirement dispersés : des états similaires
+        se regroupent. Le latent a bien construit une sorte de
+        <strong>carte mentale du monde</strong> — mais une carte partielle et imprécise.
+      </p>
+    </section>
+
+    <!-- SECTION 3 : PROBING -->
+    <section class="reveal">
+      <p class="eyebrow">Résultats des sondes</p>
+      <h2>Ce qui se lit dans le vecteur latent</h2>
+
+      <p>
+        8 propriétés sondées. Pour les positions (continues) : R² entre 0 et 1,
+        où 0 = pas mieux que la moyenne, 1 = parfait.
+        Pour les propriétés binaires : accuracy, où 50% = aléatoire.
+      </p>
+
+      <div class="probe-filters">
+        <button class="probe-filter-btn active" data-filter="all">Tout afficher</button>
+        <button class="probe-filter-btn" data-filter="position">Position <span class="badge-reg" style="display:inline-block;font-size:0.68rem;padding:1px 5px;border-radius:3px;margin-left:4px;">R²</span></button>
+        <button class="probe-filter-btn" data-filter="relation">Relations <span class="badge-clf" style="display:inline-block;font-size:0.68rem;padding:1px 5px;border-radius:3px;margin-left:4px;">clf</span></button>
+      </div>
+
+      <div class="probes-list" id="probesList">
+        <!-- Rempli par JS -->
+      </div>
+
+      <p style="margin-top:1.25rem;font-size:0.875rem;color:var(--text-muted)">
+        Le trait gris vertical sur les barres de classification marque le seuil aléatoire (50%).
+        Dépasser ce seuil signifie que la sonde a appris quelque chose.
+        Le dépasser de peu signifie que c'est à peine mieux que rien.
+      </p>
+    </section>
+
+    <!-- SECTION 4 : LA RÉVÉLATION -->
+    <section class="reveal">
+      <p class="eyebrow">Le résultat clé</p>
+      <h2>Le modèle connaît les positions. Pas les relations.</h2>
+
+      <p>
+        Parmi tous les résultats, un seul révèle quelque chose de fondamental sur
+        les limites de cette représentation.
+        On a testé deux variantes de la même propriété :
+        <em>"la boîte est-elle sur la cible ?"</em>
+      </p>
+
+      <div class="reveal-comparison">
+        <div class="rev-card good">
+          <div class="rev-metric">98.4%</div>
+          <div class="rev-title">Cible à position fixe (7, 7)</div>
+          <div class="rev-desc">
+            Dans ce test, la cible est toujours à la même case.
+            La sonde prédit quasiment parfaitement si la boîte est dessus.
+          </div>
+        </div>
+        <div class="rev-card bad">
+          <div class="rev-metric">58.6%</div>
+          <div class="rev-title">Cible à position variable</div>
+          <div class="rev-desc">
+            Dès que la cible change de place à chaque état,
+            la performance s'effondre à peine au-dessus du hasard.
+          </div>
+        </div>
+      </div>
+
+      <p>
+        L'interprétation est claire : avec une cible fixe, la sonde n'a pas appris
+        <em>"boîte == cible"</em>. Elle a appris <em>"boîte est à (7,7)"</em>.
+        C'est une information positionnelle déguisée en information relationnelle.
+        Le modèle n'a jamais représenté le concept abstrait de <strong>relation</strong>
+        entre deux objets.
+      </p>
+
+      <div class="insight-box">
+        <p>
+          Cette distinction est au cœur de la différence entre apprendre
+          des <em>régularités locales</em> et apprendre des <em>concepts abstraits</em>.
+          Le modèle sait que "quand l'agent pousse la boîte vers la droite,
+          elle se déplace". Il ne sait pas que "la boîte et la cible
+          sont des entités qui peuvent coïncider".
+          C'est exactement la limite que Yann LeCun pointe dans les LLMs :
+          manipuler des symboles sans comprendre leur signification.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 5 : BILAN -->
+    <section class="reveal">
+      <p class="eyebrow">Bilan</p>
+      <h2>Portrait du modèle</h2>
+
+      <p>
+        L'espace latent n'est pas une boîte noire opaque.
+        Il a une structure, et cette structure est partiellement interprétable.
+        Mais ce qu'elle encode est sélectif.
+      </p>
+
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-icon">✓</div>
+          <div class="summary-text">
+            <strong>Dynamique locale.</strong>
+            Le modèle prédit correctement ce qui se passe au prochain pas
+            dans 99.99% des cas. Il a appris la physique immédiate du monde.
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">✓</div>
+          <div class="summary-text">
+            <strong>Position de la boîte.</strong>
+            R² ≈ 0.68 — la position de la boîte est encodée de façon linéairement lisible.
+            Ce n'est pas parfait, mais c'est significatif.
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">~</div>
+          <div class="summary-text">
+            <strong>Position de l'agent.</strong>
+            La ligne est mieux encodée que la colonne (61% vs 40%).
+            L'agent est moins "important" pour la dynamique du monde que la boîte.
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">✓</div>
+          <div class="summary-text">
+            <strong>Proximité agent-boîte.</strong>
+            94.4% de précision. La relation de contact local est très bien capturée —
+            c'est logique, c'est ce qui déclenche la poussée.
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">✗</div>
+          <div class="summary-text">
+            <strong>Concept de "boîte sur cible".</strong>
+            58.6% avec cible variable. Le modèle ne représente pas cette relation
+            de façon générale. Il ne sait pas ce qu'est un objectif.
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-icon">✗</div>
+          <div class="summary-text">
+            <strong>Proximité aux murs.</strong>
+            57.4% — à peine mieux que le hasard. L'information sur les murs
+            n'est encodée que de façon très implicite dans le latent.
+          </div>
+        </div>
+      </div>
+
+      <p>
+        En un mot : le modèle est un expert de la <strong>physique locale</strong>,
+        pas un planificateur orienté objectif. C'est cohérent avec l'architecture JEPA :
+        elle optimise la prédiction au pas suivant, pas la capacité à atteindre un but.
+        C'est précisément ce que l'Acte 4 met à l'épreuve.
+      </p>
+    </section>
+
+    <div class="act-nav">
+      <a href="acte2.html">← Acte 2 — Entraînement</a>
+      <a href="acte4.html">Acte 4 — Limites →</a>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Mini World Model — Projet personnel de recherche</span>
+      <span>
+        <a href="https://github.com/Stabadev/mini-world-model" target="_blank" rel="noopener">GitHub</a>
+        &nbsp;·&nbsp;
+        <a href="research/references/leWorldModel.pdf" target="_blank">LeWM paper</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+  // ================================================================
+  //  PROBING DATA
+  // ================================================================
+  const PROBES = [
+    {
+      id: 'box-on-target-fixed',
+      name: 'Boîte sur cible (cible fixe)',
+      type: 'clf',
+      value: 98.39,
+      color: 'green',
+      group: 'relation',
+      note: 'Apprend la position, pas la relation'
+    },
+    {
+      id: 'adjacency',
+      name: 'Adjacence agent–boîte',
+      type: 'clf',
+      value: 94.42,
+      color: 'green',
+      group: 'relation'
+    },
+    {
+      id: 'box-row',
+      name: 'Position boîte (ligne)',
+      type: 'reg',
+      value: 68.15,
+      color: 'amber',
+      group: 'position'
+    },
+    {
+      id: 'box-col',
+      name: 'Position boîte (colonne)',
+      type: 'reg',
+      value: 68.43,
+      color: 'amber',
+      group: 'position'
+    },
+    {
+      id: 'agent-row',
+      name: 'Position agent (ligne)',
+      type: 'reg',
+      value: 61.13,
+      color: 'amber',
+      group: 'position'
+    },
+    {
+      id: 'agent-col',
+      name: 'Position agent (colonne)',
+      type: 'reg',
+      value: 39.87,
+      color: 'red',
+      group: 'position'
+    },
+    {
+      id: 'box-on-target-var',
+      name: 'Boîte sur cible (cible variable)',
+      type: 'clf',
+      value: 58.63,
+      color: 'red',
+      group: 'relation',
+      note: '≈ aléatoire'
+    },
+    {
+      id: 'box-near-wall',
+      name: 'Boîte proche d\'un mur',
+      type: 'clf',
+      value: 57.37,
+      color: 'red',
+      group: 'relation',
+      note: '≈ aléatoire'
+    },
+  ];
+
+  function buildProbeItem(probe) {
+    const el = document.createElement('div');
+    el.className = 'probe-item';
+    el.dataset.group = probe.group;
+
+    const isSpecial = probe.id === 'box-on-target-fixed' || probe.id === 'box-on-target-var';
+    if (probe.id === 'box-on-target-var' || probe.id === 'box-near-wall') el.classList.add('critical');
+
+    // Name + badge
+    const nameEl = document.createElement('div');
+    nameEl.className = 'probe-name';
+    const badgeCls = probe.type === 'reg' ? 'badge-reg' : 'badge-clf';
+    const badgeLabel = probe.type === 'reg' ? 'R²' : 'acc';
+    nameEl.innerHTML = `${probe.name} <span class="probe-type-badge ${badgeCls}">${badgeLabel}</span>`;
+    if (probe.note) {
+      const note = document.createElement('div');
+      note.style.cssText = 'font-size:0.72rem;color:#94A3B8;margin-top:2px';
+      note.textContent = probe.note;
+      nameEl.appendChild(note);
+    }
+
+    // Track
+    const track = document.createElement('div');
+    track.className = 'probe-track';
+    const fill = document.createElement('div');
+    fill.className = `probe-fill ${probe.color}`;
+    fill.style.width = '0%';
+    fill.dataset.target = probe.value + '%';
+    track.appendChild(fill);
+
+    // For classifiers, add random baseline
+    if (probe.type === 'clf') {
+      const baseline = document.createElement('div');
+      baseline.className = 'probe-baseline';
+      const blabel = document.createElement('div');
+      blabel.className = 'probe-baseline-label';
+      blabel.textContent = 'aléatoire';
+      baseline.appendChild(blabel);
+      track.appendChild(baseline);
+    }
+
+    // Value
+    const val = document.createElement('div');
+    val.className = `probe-value ${probe.color}`;
+    val.textContent = probe.value.toFixed(1) + '%';
+
+    el.appendChild(nameEl);
+    el.appendChild(track);
+    el.appendChild(val);
+    return el;
+  }
+
+  // Build list
+  const list = document.getElementById('probesList');
+  PROBES.forEach(p => list.appendChild(buildProbeItem(p)));
+
+  // Animate bars on scroll
+  const probeObs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      setTimeout(() => {
+        document.querySelectorAll('.probe-fill').forEach(fill => {
+          fill.style.width = fill.dataset.target;
+        });
+      }, 200);
+      probeObs.unobserve(entries[0].target);
+    }
+  }, { threshold: 0.2 });
+  probeObs.observe(list);
+
+  // Filter buttons
+  document.querySelectorAll('.probe-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.probe-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+      document.querySelectorAll('.probe-item').forEach(item => {
+        if (filter === 'all' || item.dataset.group === filter) {
+          item.classList.remove('dimmed');
+        } else {
+          item.classList.add('dimmed');
+        }
+      });
+    });
+  });
+
+  // ================================================================
+  //  VARIANCE BARS (animate on scroll)
+  // ================================================================
+  const varObs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      setTimeout(() => {
+        document.getElementById('varPC1').style.width = '92.45%';
+        document.getElementById('varPC2').style.width = '1.55%';
+        document.getElementById('varRest').style.width = '6%';
+      }, 300);
+      varObs.unobserve(entries[0].target);
+    }
+  }, { threshold: 0.3 });
+  const varChart = document.querySelector('.variance-chart');
+  if (varChart) varObs.observe(varChart);
+
+  // ================================================================
+  //  SCROLL REVEAL
+  // ================================================================
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  </script>
+
+</body>
+</html>
