@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acte 2 — L'entraînement · Mini World Model</title>
+  <meta name="description" content="Comment une architecture JEPA apprend à prédire l'avenir dans un espace latent. Architecture, fonction de loss, et animation de la convergence." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── architecture diagram ── */
+    .arch-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      margin: 2.5rem 0;
+      font-size: 0.875rem;
+    }
+    .arch-row {
+      display: flex;
+      align-items: stretch;
+      gap: 1.5rem;
+      width: 100%;
+      justify-content: center;
+    }
+    .arch-arrow-row {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      width: 100%;
+      margin: 0;
+    }
+    .arch-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--accent);
+      font-size: 1.2rem;
+      line-height: 1;
+      padding: 4px 0;
+      flex: 1;
+      max-width: 240px;
+    }
+    .arch-arrow-single {
+      color: var(--accent);
+      font-size: 1.2rem;
+      text-align: center;
+      padding: 4px 0;
+    }
+    .arch-box {
+      flex: 1;
+      max-width: 240px;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--border);
+      background: var(--bg-soft);
+    }
+    .arch-box.blue  { background: #EFF6FF; border-color: #BFDBFE; }
+    .arch-box.amber { background: #FFFBEB; border-color: #FDE68A; }
+    .arch-box.green { background: #F0FDF4; border-color: #BBF7D0; }
+    .arch-box.latent { background: #DBEAFE; border-color: #93C5FD; font-weight: 700; text-align: center; color: #1D4ED8; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+    .arch-box.latent.amber-lat { background: #FEF3C7; border-color: #FCD34D; color: #92400E; }
+    .arch-box.concat { background: #F5F3FF; border-color: #C4B5FD; font-weight: 700; text-align: center; color: #5B21B6; font-size: 1rem; max-width: 320px; display: flex; align-items: center; justify-content: center; }
+    .arch-box.output { background: #FEF3C7; border-color: #FCD34D; font-weight: 700; text-align: center; color: #92400E; font-size: 1rem; max-width: 320px; display: flex; align-items: center; justify-content: center; }
+    .arch-box-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.35rem; color: var(--text); }
+    .arch-box-spec  { font-size: 0.78rem; color: var(--text-muted); font-family: monospace; line-height: 1.6; }
+    .arch-box-input { background: var(--bg-soft); border-color: var(--border); text-align: center; display: flex; align-items: center; justify-content: center; font-weight: 500; color: var(--text-muted); min-height: 52px; }
+
+    .arch-merge {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      position: relative;
+      width: 100%;
+      height: 32px;
+    }
+    .arch-merge svg { width: 100%; max-width: 540px; height: 32px; overflow: visible; }
+
+    /* ── loss equation ── */
+    .loss-equation {
+      background: #0F172A;
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      margin: 1.5rem 0;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 1.05rem;
+      color: #F1F5F9;
+      letter-spacing: 0.02em;
+    }
+    .loss-equation .eq-blue  { color: #60A5FA; font-weight: 700; }
+    .loss-equation .eq-amber { color: #FCD34D; font-weight: 700; }
+    .loss-equation .eq-muted { color: #64748B; }
+
+    .loss-terms {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .loss-term {
+      padding: 1.25rem;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--border);
+    }
+    .loss-term.blue  { border-color: #BFDBFE; background: #EFF6FF; }
+    .loss-term.amber { border-color: #FDE68A; background: #FFFBEB; }
+    .loss-term-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.4rem; }
+    .loss-term.blue  .loss-term-title { color: #1D4ED8; }
+    .loss-term.amber .loss-term-title { color: #92400E; }
+    .loss-term p { font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.55; }
+
+    /* ── training chart ── */
+    .chart-section { position: relative; }
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .chart-legend {
+      display: flex;
+      gap: 1.25rem;
+      font-size: 0.83rem;
+      color: var(--text-muted);
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-line {
+      width: 24px; height: 3px; border-radius: 2px;
+      display: inline-block;
+    }
+    .legend-line.dashed {
+      background: none;
+      border-top: 2.5px dashed #F59E0B;
+      height: 0;
+      margin-top: 1px;
+    }
+
+    .chart-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    canvas#trainingChart {
+      display: block;
+      min-width: 600px;
+    }
+
+    .chart-stats {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .stat-item { display: flex; flex-direction: column; gap: 2px; }
+    .stat-label { font-size: 0.73rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-light); }
+    .stat-value { font-size: 1.1rem; font-weight: 700; font-family: monospace; color: var(--text); }
+    .stat-value.blue  { color: #2563EB; }
+    .stat-value.amber { color: #D97706; }
+
+    .train-btn-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 1.75rem 0 0.5rem;
+    }
+    #trainBtn {
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 0.75rem 2.5rem;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, opacity 0.2s;
+      letter-spacing: -0.01em;
+    }
+    #trainBtn:hover:not(:disabled) { background: #1D4ED8; transform: translateY(-1px); }
+    #trainBtn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .conv-badge {
+      display: none;
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: 700;
+      color: #15803D;
+      font-size: 1rem;
+    }
+    .conv-badge span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      background: #F0FDF4;
+      border: 1.5px solid #86EFAC;
+      border-radius: var(--radius);
+    }
+
+    /* ── convergence analysis ── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .metric-card {
+      padding: 1.25rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--accent);
+    }
+    .metric-label {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* ── act nav ── */
+    .act-nav {
+      display: flex;
+      justify-content: space-between;
+      padding: 3rem 0 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    .act-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.6rem 1.25rem;
+      border: 1.5px solid var(--accent-mid);
+      border-radius: var(--radius);
+      background: var(--accent-light);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .act-nav a:hover { background: #DBEAFE; border-color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .loss-terms { grid-template-columns: 1fr; }
+      .metrics-row { grid-template-columns: repeat(2, 1fr); }
+      .arch-row { flex-direction: column; align-items: center; }
+      .arch-arrow-row { flex-direction: column; align-items: center; }
+      .arch-arrow { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">Mini <span>World Model</span></a>
+      <ul class="nav-links">
+        <li><a href="acte1.html">Acte 1 — Environnement</a></li>
+        <li><a href="acte2.html" class="active">Acte 2 — Entraînement</a></li>
+        <li><a href="acte3.html">Acte 3 — Représentation</a></li>
+        <li><a href="acte4.html">Acte 4 — Limites</a></li>
+        <li><a href="conclusion.html">Conclusion</a></li>
+      </ul>
+      <a href="https://github.com/Stabadev/mini-world-model" class="nav-github" target="_blank" rel="noopener">GitHub ↗</a>
+      <button class="nav-burger" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <p class="eyebrow">Acte 2</p>
+      <h1>L'entraînement</h1>
+      <p class="hero-lead">
+        On dispose de 20 000 transitions. Il faut maintenant entraîner un modèle
+        à prédire l'avenir — non pas en pixels, mais dans un espace de représentation
+        abstrait qu'il construit lui-même.
+      </p>
+    </section>
+
+    <!-- SECTION 1 : ARCHITECTURE -->
+    <section class="reveal">
+      <p class="eyebrow">L'architecture</p>
+      <h2>Trois composants qui apprennent ensemble</h2>
+
+      <p>
+        Le world model est une architecture JEPA composée de trois réseaux de neurones.
+        Chacun a un rôle précis. Ils ne s'entraînent pas séparément : leurs paramètres
+        sont tous optimisés simultanément par rétropropagation.
+      </p>
+
+      <!-- Flow diagram -->
+      <div class="arch-flow">
+
+        <!-- Inputs -->
+        <div class="arch-row">
+          <div class="arch-box arch-box-input">obs<sub>t</sub> — image 10×10</div>
+          <div class="arch-box arch-box-input">action<sub>t</sub> — entier 0 à 3</div>
+        </div>
+
+        <div class="arch-arrow-row">
+          <div class="arch-arrow">↓</div>
+          <div class="arch-arrow">↓</div>
+        </div>
+
+        <!-- Encoders -->
+        <div class="arch-row">
+          <div class="arch-box blue">
+            <div class="arch-box-title">Encodeur CNN</div>
+            <div class="arch-box-spec">
+              Conv2d(1→16) + ReLU<br>
+              Conv2d(16→32) + ReLU<br>
+              Linear(3200→32) + BatchNorm
+            </div>
+          </div>
+          <div class="arch-box amber">
+            <div class="arch-box-title">Embedding d'action</div>
+            <div class="arch-box-spec">
+              Embedding(4, 32)<br>
+              &nbsp;<br>
+              (4 vecteurs apprenables)
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-arrow-row">
+          <div class="arch-arrow">↓</div>
+          <div class="arch-arrow">↓</div>
+        </div>
+
+        <!-- Latent vectors -->
+        <div class="arch-row">
+          <div class="arch-box latent">z<sub>t</sub> — 32 dimensions</div>
+          <div class="arch-box latent amber-lat">e<sub>a</sub> — 32 dimensions</div>
+        </div>
+
+        <!-- Merge -->
+        <div class="arch-merge">
+          <svg viewBox="0 0 400 32" preserveAspectRatio="xMidYMid meet">
+            <line x1="100" y1="0" x2="200" y2="30" stroke="#2563EB" stroke-width="1.5" marker-end="url(#mArr)"/>
+            <line x1="300" y1="0" x2="200" y2="30" stroke="#D97706" stroke-width="1.5" marker-end="url(#mArr)"/>
+            <defs>
+              <marker id="mArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="#4B5563"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+
+        <!-- Concat -->
+        <div style="display:flex;justify-content:center;width:100%">
+          <div class="arch-box concat">concaténation → 64 dimensions</div>
+        </div>
+
+        <div class="arch-arrow-single">↓</div>
+
+        <!-- Predictor -->
+        <div style="display:flex;justify-content:center;width:100%">
+          <div class="arch-box green" style="max-width:320px">
+            <div class="arch-box-title">Prédicteur MLP</div>
+            <div class="arch-box-spec">
+              Linear(64→64) + ReLU<br>
+              Linear(64→64) + ReLU<br>
+              Linear(64→32)
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-arrow-single">↓</div>
+
+        <!-- Output -->
+        <div style="display:flex;justify-content:center;width:100%">
+          <div class="arch-box output">ẑ<sub>t+1</sub> — prédiction latente 32D</div>
+        </div>
+      </div>
+
+      <!-- Composant par composant -->
+      <h3 style="margin-bottom:0.75rem">Pourquoi ces choix ?</h3>
+
+      <p>
+        <strong>Le CNN pour l'encodeur</strong> — une image 10×10, c'est 100 pixels.
+        Un réseau dense les traiterait tous de façon indépendante.
+        Le CNN, lui, utilise des filtres locaux qui se déplacent sur l'image :
+        il apprend à détecter des motifs spatiaux (la position d'un objet, un coin de mur)
+        avant de produire un résumé global de 32 dimensions.
+        C'est la bonne inductive bias pour des données structurées spatialement.
+      </p>
+
+      <p>
+        <strong>L'embedding pour l'action</strong> — l'action est un entier (0, 1, 2 ou 3).
+        Passer cet entier brut au prédicteur n'aurait pas de sens : 3 n'est pas
+        "plus grand" que 0 dans le sens physique. L'embedding apprend
+        un vecteur de 32 nombres pour chaque action, que le prédicteur peut
+        combiner avec l'état latent de façon souple.
+      </p>
+
+      <p>
+        <strong>Le MLP pour le prédicteur</strong> — une fois l'état et l'action
+        fusionnés en 64 dimensions, le prédicteur est un réseau entièrement connecté
+        classique. Sa tâche est de modéliser des transformations non-linéaires
+        dans l'espace latent : "si l'état est celui-ci et que l'action est celle-là,
+        le prochain état latent ressemble à ça."
+      </p>
+
+      <div class="insight-box">
+        <p>
+          Au total : <strong>~15 000 paramètres apprenables</strong>.
+          C'est minuscule comparé aux milliards des grands modèles —
+          mais suffisant pour un monde à 10×10 cases.
+          Le modèle tient entièrement en mémoire vive et s'entraîne en quelques secondes sur CPU.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 2 : LOSS FUNCTION -->
+    <section class="reveal">
+      <p class="eyebrow">La fonction de loss</p>
+      <h2>Deux objectifs en tension</h2>
+
+      <p>
+        L'entraînement consiste à minimiser une fonction de perte qui combine
+        deux termes aux rôles opposés : l'un pousse le modèle à bien prédire,
+        l'autre l'empêche de tricher.
+      </p>
+
+      <div class="loss-equation">
+        <span class="eq-muted">ℒ =</span>
+        &nbsp;
+        <span class="eq-blue">‖ẑ<sub>t+1</sub> − z<sub>t+1</sub>‖²</span>
+        &nbsp;
+        <span class="eq-muted">+</span>
+        &nbsp;
+        <span class="eq-amber">λ · CovReg(Z)</span>
+        &nbsp;&nbsp;
+        <span class="eq-muted">(λ = 0.1)</span>
+      </div>
+
+      <div class="loss-terms">
+        <div class="loss-term blue">
+          <div class="loss-term-title">Terme 1 — Erreur de prédiction (MSE)</div>
+          <p>
+            On mesure la distance au carré entre le vecteur latent
+            <em>prédit</em> (ẑ<sub>t+1</sub>, produit par le prédicteur)
+            et le vecteur latent <em>réel</em> (z<sub>t+1</sub>, produit en encodant
+            l'observation suivante). Ce terme force le modèle à prédire juste.
+          </p>
+        </div>
+        <div class="loss-term amber">
+          <div class="loss-term-title">Terme 2 — Régularisation de covariance</div>
+          <p>
+            Pénalise les corrélations entre dimensions du vecteur latent.
+            Si deux dimensions encodent toujours la même chose, la pénalité augmente.
+            Ce terme force chacune des 32 dimensions à porter une information
+            <em>différente</em>.
+          </p>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom: 0.75rem">Pourquoi le deuxième terme est indispensable</h3>
+
+      <p>
+        Sans régularisation, le modèle découvre rapidement une solution triviale :
+        projeter <em>toutes</em> les images sur le même vecteur constant.
+        La loss de prédiction tombe alors à zéro — ẑ<sub>t+1</sub> = z<sub>t+1</sub>
+        si les deux valent toujours (0, 0, …, 0) — sans que le modèle
+        ait appris quoi que ce soit sur le monde.
+        Ce phénomène s'appelle l'<strong>effondrement de représentation</strong>
+        (<em>representation collapse</em>).
+      </p>
+
+      <div class="insight-box">
+        <p>
+          La régularisation par covariance s'inspire de VICReg (2022) et du papier LeWM.
+          Elle pénalise les termes hors-diagonaux de la matrice de covariance du batch :
+          si dim<sub>i</sub> et dim<sub>j</sub> sont systématiquement corrélées,
+          elles encodent la même chose — du gaspillage de capacité.
+          La BatchNorm sur la sortie de l'encodeur joue un rôle complémentaire :
+          elle normalise chaque dimension, empêchant certaines de saturer ou s'effondrer.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 3 : ANIMATION -->
+    <section class="reveal chart-section">
+      <p class="eyebrow">Visualisation</p>
+      <h2>Regardez le modèle apprendre</h2>
+
+      <p>
+        50 époques, 250 batches de 64 transitions par époque, optimiseur Adam.
+        À chaque étape, les poids sont ajustés pour réduire la loss sur les
+        16 000 transitions d'entraînement — et on mesure au passage si le modèle
+        généralise sur les 4 000 transitions de validation.
+      </p>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div style="font-weight:700;font-size:1rem;margin-bottom:4px">Courbes de loss — échelle logarithmique</div>
+            <div style="font-size:0.83rem;color:var(--text-muted)">Les vrais chiffres du notebook</div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <span class="legend-line" style="background:#2563EB"></span>
+              Train
+            </div>
+            <div class="legend-item">
+              <span class="legend-line dashed"></span>
+              Validation
+            </div>
+          </div>
+        </div>
+
+        <canvas id="trainingChart" width="680" height="300"></canvas>
+
+        <div class="chart-stats">
+          <div class="stat-item">
+            <span class="stat-label">Époque</span>
+            <span class="stat-value" id="statEpoch">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Loss train</span>
+            <span class="stat-value blue" id="statTrain">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Loss val</span>
+            <span class="stat-value amber" id="statVal">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Pred loss</span>
+            <span class="stat-value" id="statPred" style="color:#64748B">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Cov reg × 0.1</span>
+            <span class="stat-value" id="statReg" style="color:#D97706">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="train-btn-wrap">
+        <button id="trainBtn">▶ Lancer l'entraînement</button>
+      </div>
+      <div class="conv-badge" id="convBadge">
+        <span>✓ Convergence atteinte — loss finale ≈ 0.0001</span>
+      </div>
+    </section>
+
+    <!-- SECTION 4 : ANALYSE -->
+    <section class="reveal">
+      <p class="eyebrow">Analyse</p>
+      <h2>Ce que la convergence nous apprend</h2>
+
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-value">14</div>
+          <div class="metric-label">Époques pour converger</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">×2880</div>
+          <div class="metric-label">Réduction de loss (époque 1 → 50)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">0</div>
+          <div class="metric-label">Surapprentissage (train ≈ val)</div>
+        </div>
+      </div>
+
+      <p>
+        La convergence est <strong>rapide et propre</strong>.
+        En 14 époques, la loss passe de 0.29 à 0.001 — une chute de deux ordres de
+        grandeur. Puis elle s'affine progressivement jusqu'à ~0.0001 à l'époque 30,
+        et reste stable jusqu'à la 50e.
+      </p>
+
+      <p>
+        L'<strong>époque 13</strong> est intéressante : la loss d'entraînement remonte
+        brièvement de 0.0044 à 0.0135 avant de plonger à 0.0016. C'est une instabilité
+        transitoire — le modèle "réorganise" ses représentations internes.
+        La loss de validation, elle, continue de descendre sans discontinuité,
+        ce qui confirme qu'il ne s'agit pas d'un problème réel.
+      </p>
+
+      <p>
+        L'absence de surapprentissage est notable : les courbes train et validation
+        restent collées tout au long de l'entraînement. C'est cohérent avec un problème
+        bien posé — le dataset est suffisamment varié et la tâche
+        (prédire dans l'espace latent) est naturellement régularisante.
+      </p>
+
+      <div class="insight-box">
+        <p>
+          Une loss finale de ~0.0001 signifie que le prédicteur est capable d'anticiper
+          la représentation latente du prochain état avec une erreur quadratique
+          de 0.01% de l'amplitude typique du vecteur latent.
+          Mais <strong>une faible loss de prédiction ne garantit pas
+          que l'espace latent encode ce dont on a besoin pour planifier</strong>.
+          C'est précisément ce qu'on explore à l'acte 3.
+        </p>
+      </div>
+    </section>
+
+    <div class="act-nav">
+      <a href="acte1.html">← Acte 1 — Environnement</a>
+      <a href="acte3.html">Acte 3 — Représentation →</a>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Mini World Model — Projet personnel de recherche</span>
+      <span>
+        <a href="https://github.com/Stabadev/mini-world-model" target="_blank" rel="noopener">GitHub</a>
+        &nbsp;·&nbsp;
+        <a href="research/references/leWorldModel.pdf" target="_blank">LeWM paper</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+  // ================================================================
+  //  TRAINING DATA — vrais chiffres du notebook 02
+  // ================================================================
+  const TRAIN_LOSS = [
+    0.2881, 0.0940, 0.0511, 0.0349, 0.0316, 0.0221, 0.0144, 0.0101,
+    0.0121, 0.0089, 0.0047, 0.0044, 0.0135, 0.0016, 0.0009, 0.0007,
+    0.0006, 0.0005, 0.0004, 0.0004, 0.0003, 0.0003, 0.0002, 0.0002,
+    0.0002, 0.0002, 0.0002, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+    0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+    0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+    0.0001, 0.0001
+  ];
+  const VAL_LOSS = [
+    0.1622, 0.0555, 0.0391, 0.0335, 0.0205, 0.0165, 0.0128, 0.0108,
+    0.0084, 0.0079, 0.0035, 0.0048, 0.0038, 0.0010, 0.0008, 0.0006,
+    0.0006, 0.0004, 0.0003, 0.0004, 0.0003, 0.0003, 0.0002, 0.0003,
+    0.0001, 0.0001, 0.0002, 0.0001, 0.0003, 0.0001, 0.0002, 0.0001,
+    0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+    0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+    0.0001, 0.0001
+  ];
+  const TRAIN_PRED = [
+    0.2736, 0.0876, 0.0473, 0.0323, 0.0295, 0.0203, 0.0132, 0.0091,
+    0.0111, 0.0081, 0.0041, 0.0039, 0.0128, 0.0013, 0.0007, 0.0005,
+    0.0004, 0.0004, 0.0003, 0.0003, 0.0002, 0.0002, 0.0002, 0.0002,
+    0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+    0.0001, 0.0001, 0.0001, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000,
+    0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000,
+    0.0000, 0.0000
+  ];
+  const TRAIN_REG = [
+    0.1447, 0.0643, 0.0383, 0.0257, 0.0210, 0.0178, 0.0121, 0.0101,
+    0.0108, 0.0081, 0.0058, 0.0047, 0.0072, 0.0029, 0.0023, 0.0019,
+    0.0016, 0.0013, 0.0011, 0.0009, 0.0008, 0.0007, 0.0005, 0.0005,
+    0.0004, 0.0003, 0.0003, 0.0002, 0.0002, 0.0001, 0.0001, 0.0001,
+    0.0001, 0.0001, 0.0001, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000,
+    0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000,
+    0.0000, 0.0000
+  ];
+
+  // ================================================================
+  //  CHART ENGINE
+  // ================================================================
+  const cv   = document.getElementById('trainingChart');
+  const ctx  = cv.getContext('2d');
+  const M    = { top: 28, right: 24, bottom: 46, left: 70 };
+  const Y_MIN = 0.00007, Y_MAX = 0.45;
+
+  function chartW() { return cv.width  - M.left - M.right;  }
+  function chartH() { return cv.height - M.top  - M.bottom; }
+
+  function xS(ep) {  // epoch 1-50 → canvas x
+    return M.left + (ep - 1) / 49 * chartW();
+  }
+  function yS(v) {   // loss value → canvas y (log scale)
+    const lMin = Math.log10(Y_MIN), lMax = Math.log10(Y_MAX);
+    const lV   = Math.log10(Math.max(v, Y_MIN));
+    return M.top + ((lMax - lV) / (lMax - lMin)) * chartH();
+  }
+
+  function drawAxes() {
+    ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 1;
+    // Y axis
+    ctx.beginPath(); ctx.moveTo(M.left, M.top); ctx.lineTo(M.left, M.top + chartH()); ctx.stroke();
+    // X axis
+    ctx.beginPath(); ctx.moveTo(M.left, M.top + chartH()); ctx.lineTo(M.left + chartW(), M.top + chartH()); ctx.stroke();
+
+    ctx.font = '11px Inter, sans-serif';
+
+    // Y ticks + labels
+    const yTicks = [0.3, 0.1, 0.01, 0.001, 0.0001];
+    const yLabels = ['0.3', '0.1', '0.01', '0.001', '0.0001'];
+    yTicks.forEach((t, i) => {
+      const y = yS(t);
+      // grid
+      ctx.strokeStyle = '#F1F5F9'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(M.left + 1, y); ctx.lineTo(M.left + chartW(), y); ctx.stroke();
+      // tick
+      ctx.strokeStyle = '#CBD5E1';
+      ctx.beginPath(); ctx.moveTo(M.left - 4, y); ctx.lineTo(M.left, y); ctx.stroke();
+      // label
+      ctx.fillStyle = '#94A3B8'; ctx.textAlign = 'right';
+      ctx.fillText(yLabels[i], M.left - 8, y + 4);
+    });
+
+    // X ticks + labels
+    [1, 10, 20, 30, 40, 50].forEach(ep => {
+      const x = xS(ep);
+      ctx.strokeStyle = ep === 1 ? 'transparent' : '#F1F5F9'; ctx.lineWidth = 1;
+      ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(x, M.top); ctx.lineTo(x, M.top + chartH()); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#CBD5E1';
+      ctx.beginPath(); ctx.moveTo(x, M.top + chartH()); ctx.lineTo(x, M.top + chartH() + 4); ctx.stroke();
+      ctx.fillStyle = '#94A3B8'; ctx.textAlign = 'center';
+      ctx.fillText(ep, x, M.top + chartH() + 18);
+    });
+
+    // Axis titles
+    ctx.fillStyle = '#64748B'; ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Époque', M.left + chartW() / 2, cv.height - 6);
+    ctx.save();
+    ctx.translate(12, M.top + chartH() / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Loss (log)', 0, 0);
+    ctx.restore();
+  }
+
+  function drawCurve(data, color, dashed, maxEp) {
+    if (maxEp < 1) return;
+    ctx.beginPath();
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (dashed) ctx.setLineDash([7, 4]); else ctx.setLineDash([]);
+    ctx.moveTo(xS(1), yS(data[0]));
+    for (let i = 1; i < Math.min(maxEp, data.length); i++) ctx.lineTo(xS(i + 1), yS(data[i]));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // moving dot
+    if (maxEp <= data.length) {
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(xS(maxEp), yS(data[maxEp - 1]), 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'white';
+      ctx.beginPath(); ctx.arc(xS(maxEp), yS(data[maxEp - 1]), 2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawAnnotation(ep, label, color, side) {
+    const x = xS(ep);
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(x, M.top + 6); ctx.lineTo(x, M.top + chartH()); ctx.stroke();
+    ctx.setLineDash([]);
+    const tx = side === 'right' ? x + 4 : x - 4;
+    ctx.textAlign = side === 'right' ? 'left' : 'right';
+    ctx.fillStyle = color; ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.fillText(label, tx, M.top + 16);
+  }
+
+  function renderChart(epoch) {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    drawAxes();
+    if (epoch > 0) {
+      if (epoch >= 13) drawAnnotation(13, 'Spike', '#F59E0B', 'left');
+      if (epoch >= 14) drawAnnotation(14, 'Convergence', '#22C55E', 'right');
+      drawCurve(VAL_LOSS,   '#F59E0B', true,  epoch);
+      drawCurve(TRAIN_LOSS, '#2563EB', false, epoch);
+    }
+  }
+
+  function updateStats(ep) {
+    const fmt = v => v < 0.00005 ? '< 0.0001' : v.toFixed(4);
+    document.getElementById('statEpoch').textContent = `${ep} / 50`;
+    document.getElementById('statTrain').textContent = fmt(TRAIN_LOSS[ep - 1]);
+    document.getElementById('statVal').textContent   = fmt(VAL_LOSS[ep - 1]);
+    document.getElementById('statPred').textContent  = fmt(TRAIN_PRED[ep - 1]);
+    document.getElementById('statReg').textContent   = fmt(TRAIN_REG[ep - 1] * 0.1);
+  }
+
+  // ================================================================
+  //  ANIMATION CONTROL
+  // ================================================================
+  let currentEp = 0;
+  let animRunning = false;
+  let animTimer = null;
+
+  function epochDelay(ep) {
+    if (ep <= 15) return 150;
+    if (ep <= 25) return 80;
+    return 35;
+  }
+
+  function step() {
+    currentEp++;
+    renderChart(currentEp);
+    updateStats(currentEp);
+    if (currentEp < 50) {
+      animTimer = setTimeout(step, epochDelay(currentEp));
+    } else {
+      animRunning = false;
+      const btn = document.getElementById('trainBtn');
+      btn.disabled = false;
+      btn.textContent = '↺ Recommencer';
+      document.getElementById('convBadge').style.display = 'block';
+    }
+  }
+
+  document.getElementById('trainBtn').addEventListener('click', () => {
+    if (animRunning) return;
+    clearTimeout(animTimer);
+    currentEp = 0;
+    animRunning = true;
+    document.getElementById('convBadge').style.display = 'none';
+    const btn = document.getElementById('trainBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Entraînement en cours…';
+    step();
+  });
+
+  // Draw empty chart on load
+  renderChart(0);
+
+  // ================================================================
+  //  SCROLL REVEAL
+  // ================================================================
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  </script>
+
+  <script src="nav.js"></script>
+</body>
+</html>

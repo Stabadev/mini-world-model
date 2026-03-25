@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acte 1 — L'environnement · Mini World Model</title>
+  <meta name="description" content="Le GridWorld : un monde simulé dont chaque état est une image 10×10. La matière première pour entraîner un world model." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── value table ── */
+    .value-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin: 1.5rem 0;
+    }
+    .value-table th {
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .value-table td {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .value-table tr:last-child td { border-bottom: none; }
+    .cell-dot {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border-radius: 3px;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    .val-code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── game layout ── */
+    .game-layout {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 2rem;
+      align-items: start;
+      margin-top: 2rem;
+    }
+    .game-col { display: flex; flex-direction: column; gap: 1rem; }
+
+    canvas#gameCanvas {
+      display: block;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      cursor: default;
+      transition: border-color 0.2s;
+    }
+    canvas#gameCanvas.active { border-color: var(--accent); }
+
+    .game-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .game-status {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    .game-status .moves { color: var(--accent); font-weight: 600; }
+    .game-status .win-msg { color: #16A34A; font-weight: 700; }
+
+    .btn {
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 7px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .key-hint {
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+    .key-hint kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.75rem;
+      background: var(--bg-soft);
+      color: var(--text-muted);
+    }
+
+    /* ── matrix display ── */
+    .matrix-col { display: flex; flex-direction: column; gap: 0.75rem; }
+    .matrix-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-light);
+    }
+    .matrix-card {
+      background: #0F172A;
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      overflow: auto;
+    }
+    pre#matrixDisplay {
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 0;
+      white-space: pre;
+    }
+    .matrix-legend {
+      font-size: 0.78rem;
+      color: var(--text-light);
+      line-height: 1.7;
+    }
+    .matrix-legend span { font-family: monospace; }
+
+    /* ── rules ── */
+    .rules-list { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
+    .rule-card {
+      display: grid;
+      grid-template-columns: auto auto auto 1fr;
+      gap: 0 1.5rem;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+    .rule-canvas-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .rule-canvas-wrap span {
+      font-size: 0.72rem;
+      color: var(--text-light);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .rule-arrow {
+      font-size: 1.3rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .rule-text h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+    .rule-text p  { font-size: 0.875rem; color: var(--text-muted); margin: 0; }
+    .rule-action-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 1px 7px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border-radius: 4px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    /* ── dataset ── */
+    .dataset-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem;
+      margin: 2rem 0;
+    }
+    .dataset-cat {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 0.75rem;
+      text-align: center;
+    }
+    .dataset-cat .cat-count {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -0.04em;
+    }
+    .dataset-cat .cat-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      line-height: 1.4;
+    }
+    .dataset-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1.25rem;
+      background: var(--accent-light);
+      border: 1px solid var(--accent-mid);
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .dataset-total span:last-child {
+      font-size: 1.2rem;
+      color: var(--accent);
+      font-weight: 800;
+    }
+    .triplet-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.25rem 1.5rem;
+      background: #0F172A;
+      border-radius: var(--radius);
+      margin: 2rem 0;
+      flex-wrap: wrap;
+    }
+    .triplet-item {
+      text-align: center;
+      flex: 1;
+      min-width: 100px;
+    }
+    .triplet-item .ti-label {
+      font-size: 0.75rem;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 4px;
+    }
+    .triplet-item .ti-val {
+      font-family: monospace;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #F1F5F9;
+    }
+    .triplet-arrow {
+      font-size: 1.2rem;
+      color: #2563EB;
+      font-weight: 700;
+    }
+
+    /* ── act nav ── */
+    .act-nav {
+      display: flex;
+      justify-content: flex-end;
+      padding: 3rem 0 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    .act-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.6rem 1.25rem;
+      border: 1.5px solid var(--accent-mid);
+      border-radius: var(--radius);
+      background: var(--accent-light);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .act-nav a:hover { background: #DBEAFE; border-color: var(--accent); }
+
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr; }
+      canvas#gameCanvas { width: 100%; height: auto; }
+      .rule-card { grid-template-columns: 1fr; gap: 0.75rem; }
+      .rule-arrow { display: none; }
+      .dataset-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">Mini <span>World Model</span></a>
+      <ul class="nav-links">
+        <li><a href="acte1.html" class="active">Acte 1 — Environnement</a></li>
+        <li><a href="acte2.html">Acte 2 — Entraînement</a></li>
+        <li><a href="acte3.html">Acte 3 — Représentation</a></li>
+        <li><a href="acte4.html">Acte 4 — Limites</a></li>
+        <li><a href="conclusion.html">Conclusion</a></li>
+      </ul>
+      <a href="https://github.com/Stabadev/mini-world-model" class="nav-github" target="_blank" rel="noopener">GitHub ↗</a>
+      <button class="nav-burger" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <p class="eyebrow">Acte 1</p>
+      <h1>L'environnement</h1>
+      <p class="hero-lead">
+        Avant d'entraîner un modèle à comprendre un monde,
+        il faut créer ce monde — et le convertir en images.
+        Car une machine ne voit pas des règles : elle voit des matrices de nombres.
+      </p>
+    </section>
+
+    <!-- SECTION 1 : UN MONDE CONVERTI EN IMAGES -->
+    <section class="reveal">
+      <p class="eyebrow">Le principe</p>
+      <h2>Chaque état du monde est une image</h2>
+
+      <p>
+        Le monde simulé est une grille de <strong>10 × 10 cases</strong>.
+        Elle contient un agent (le personnage), une boîte à pousser, une cible, et des murs sur tout le périmètre.
+        Rien de plus.
+      </p>
+
+      <p>
+        Mais ce qui est important, c'est comment ce monde est <em>représenté</em>.
+        À chaque instant, la grille est convertie en une <strong>matrice 10 × 10 de valeurs flottantes</strong> —
+        exactement comme une image en niveaux de gris.
+        C'est cette matrice que le modèle recevra en entrée.
+      </p>
+
+      <table class="value-table">
+        <thead>
+          <tr>
+            <th>Élément</th>
+            <th>Valeur dans la matrice</th>
+            <th>Couleur</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="cell-dot" style="background:#F1F5F9;border:1px solid #E2E8F0"></span>Case vide</td>
+            <td><span class="val-code">0.0</span></td>
+            <td>Blanc</td>
+          </tr>
+          <tr>
+            <td><span class="cell-dot" style="background:#334155"></span>Mur</td>
+            <td><span class="val-code">0.2</span></td>
+            <td>Gris foncé</td>
+          </tr>
+          <tr>
+            <td><span class="cell-dot" style="background:#22C55E"></span>Cible</td>
+            <td><span class="val-code">1.0</span></td>
+            <td>Vert</td>
+          </tr>
+          <tr>
+            <td><span class="cell-dot" style="background:#2563EB;border-radius:50%"></span>Agent</td>
+            <td><span class="val-code">0.5</span></td>
+            <td>Bleu</td>
+          </tr>
+          <tr>
+            <td><span class="cell-dot" style="background:#EF4444;border-radius:4px"></span>Boîte</td>
+            <td><span class="val-code">0.8</span></td>
+            <td>Rouge</td>
+          </tr>
+          <tr>
+            <td><span class="cell-dot" style="background:#F97316;border-radius:4px"></span>Boîte sur cible</td>
+            <td><span class="val-code">0.9</span></td>
+            <td>Orange</td>
+          </tr>
+          <tr>
+            <td><span class="cell-dot" style="background:#7C3AED;border-radius:50%"></span>Agent sur cible</td>
+            <td><span class="val-code">0.6</span></td>
+            <td>Violet</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        C'est une convention arbitraire, mais elle a du sens : les valeurs sont ordonnées,
+        l'encodeur CNN peut les différencier par les filtres qu'il apprend.
+        L'essentiel, c'est que <strong>tout état possible du monde est entièrement
+        décrit par cette image</strong> — aucune information cachée.
+      </p>
+    </section>
+
+    <!-- SECTION 2 : LE SIMULATEUR -->
+    <section class="reveal">
+      <p class="eyebrow">Démo interactive</p>
+      <h2>Jouez — et regardez ce que voit le modèle</h2>
+
+      <p>
+        Déplacez l'agent avec les flèches ou <kbd>WASD</kbd>.
+        Poussez la boîte <span style="color:#EF4444;font-weight:600">■</span> sur la cible
+        <span style="color:#22C55E;font-weight:600">✕</span>.
+        À droite, la matrice de valeurs flottantes se met à jour en temps réel :
+        c'est exactement ce que l'encodeur recevra lors de l'entraînement.
+      </p>
+
+      <div class="game-layout">
+        <div class="game-col">
+          <canvas id="gameCanvas" width="400" height="400" tabindex="0"></canvas>
+          <div class="game-toolbar">
+            <div class="game-status">
+              <span id="statusText">Déplacez l'agent avec les flèches ou WASD</span>
+            </div>
+            <button class="btn" id="resetBtn">↺ Reset</button>
+          </div>
+          <p class="key-hint">
+            <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> ou
+            <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+          </p>
+        </div>
+
+        <div class="matrix-col">
+          <p class="matrix-label">Ce que voit le modèle — matrice 10×10</p>
+          <div class="matrix-card">
+            <pre id="matrixDisplay"></pre>
+          </div>
+          <div class="matrix-legend">
+            <span style="color:#94A3B8">0.2</span> mur &nbsp;
+            <span style="color:#2563EB">0.5</span> agent &nbsp;
+            <span style="color:#EF4444">0.8</span> boîte &nbsp;
+            <span style="color:#22C55E">1.0</span> cible &nbsp;
+            <span style="color:#F97316">0.9</span> boîte/cible
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3 : LES RÈGLES PHYSIQUES -->
+    <section class="reveal">
+      <p class="eyebrow">La physique du monde</p>
+      <h2>Cinq règles que le modèle devra apprendre</h2>
+
+      <p>
+        Ces règles ne sont jamais expliquées au modèle. Il devra les déduire
+        en observant des milliers de paires (image avant, image après).
+        C'est exactement ce que fait un enfant : pas de manuel, juste de l'observation.
+      </p>
+
+      <div class="rules-list" id="rulesList">
+        <!-- Rempli par JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 4 : LE DATASET -->
+    <section class="reveal">
+      <p class="eyebrow">Les données d'entraînement</p>
+      <h2>20 000 images organisées par règle</h2>
+
+      <p>
+        Pour entraîner le world model, on a besoin de <strong>transitions</strong> :
+        des triplets (image_t, action, image_t+1) qui montrent comment le monde évolue.
+        La structure de ces données est fondamentale.
+      </p>
+
+      <div class="triplet-box">
+        <div class="triplet-item">
+          <div class="ti-label">image_t</div>
+          <div class="ti-val">matrice 10×10</div>
+        </div>
+        <div class="triplet-arrow">+</div>
+        <div class="triplet-item">
+          <div class="ti-label">action</div>
+          <div class="ti-val">0, 1, 2 ou 3</div>
+        </div>
+        <div class="triplet-arrow">→</div>
+        <div class="triplet-item">
+          <div class="ti-label">image_t+1</div>
+          <div class="ti-val">matrice 10×10</div>
+        </div>
+        <div class="triplet-arrow">=</div>
+        <div class="triplet-item">
+          <div class="ti-label">un exemple</div>
+          <div class="ti-val">d'entraînement</div>
+        </div>
+      </div>
+
+      <p>
+        Naïvement, on pourrait laisser l'agent se déplacer aléatoirement et enregistrer
+        tout ce qui se passe. Mais l'exploration aléatoire sous-représente certaines règles :
+        on verra rarement un agent pousser une boîte exactement contre un mur,
+        ou une boîte verrouillée sur sa cible.
+      </p>
+
+      <p>
+        L'approche choisie ici est un <strong>dataset dirigé</strong> : on génère
+        délibérément des milliers d'exemples de chaque règle physique.
+        5 catégories, 4 000 exemples chacune.
+      </p>
+
+      <div class="dataset-grid">
+        <div class="dataset-cat">
+          <div class="cat-count">4 000</div>
+          <div class="cat-label">Mouvement libre</div>
+        </div>
+        <div class="dataset-cat">
+          <div class="cat-count">4 000</div>
+          <div class="cat-label">Agent bloqué par mur</div>
+        </div>
+        <div class="dataset-cat">
+          <div class="cat-count">4 000</div>
+          <div class="cat-label">Poussée valide</div>
+        </div>
+        <div class="dataset-cat">
+          <div class="cat-count">4 000</div>
+          <div class="cat-label">Boîte bloquée par mur</div>
+        </div>
+        <div class="dataset-cat">
+          <div class="cat-count">4 000</div>
+          <div class="cat-label">Boîte verrouillée sur cible</div>
+        </div>
+      </div>
+
+      <div class="dataset-total">
+        <span>Total des transitions d'entraînement</span>
+        <span>20 000</span>
+      </div>
+
+      <p style="margin-top:1.5rem">
+        Chaque triplet est sauvegardé sous forme de tableaux NumPy :
+        <code>observations.npy</code>, <code>actions.npy</code>, <code>next_obs.npy</code>.
+        Ces fichiers sont la matière première que l'entraînement consommera à l'Acte 2.
+      </p>
+
+      <div class="insight-box" style="margin-top:1.5rem">
+        <p>
+          L'encodeur CNN recevra ces 20 000 images comme entrée. Il ne sait pas ce qu'est
+          un « mur » ou une « boîte » — il voit des matrices de flottants.
+          Ce qui compte, c'est que ces matrices contiennent tous les exemples nécessaires
+          pour que le prédicteur puisse anticiper les changements.
+        </p>
+      </div>
+    </section>
+
+    <div class="act-nav">
+      <a href="acte2.html">Acte 2 — L'entraînement →</a>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Mini World Model — Projet personnel de recherche</span>
+      <span>
+        <a href="https://github.com/Stabadev/mini-world-model" target="_blank" rel="noopener">GitHub</a>
+        &nbsp;·&nbsp;
+        <a href="research/references/leWorldModel.pdf" target="_blank">LeWM paper</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+  // ================================================================
+  //  PHYSICS ENGINE — même logique que environment.py
+  // ================================================================
+  const DIRS = [[-1,0],[1,0],[0,-1],[0,1]]; // up, down, left, right
+  const KEY_MAP = {
+    ArrowUp:0, ArrowDown:1, ArrowLeft:2, ArrowRight:3,
+    w:0, s:1, a:2, d:3, W:0, S:1, A:2, D:3
+  };
+
+  class GridWorld {
+    constructor() { this.size = 10; this.reset(); }
+
+    reset() {
+      this.target = this._rndInterior();
+      this.box    = this._rndDeep(this.target);
+      this.agent  = this._rndInterior(this.target, this.box);
+      this.won    = false;
+      this.moves  = 0;
+    }
+
+    _rndInterior(...excl) {
+      let p;
+      do { p = [1 + Math.floor(Math.random()*8), 1 + Math.floor(Math.random()*8)]; }
+      while (excl.some(e => e && e[0]===p[0] && e[1]===p[1]));
+      return p;
+    }
+
+    _rndDeep(...excl) {
+      let p;
+      do { p = [2 + Math.floor(Math.random()*6), 2 + Math.floor(Math.random()*6)]; }
+      while (excl.some(e => e && e[0]===p[0] && e[1]===p[1]));
+      return p;
+    }
+
+    isWall(r,c) { return r===0||r===9||c===0||c===9; }
+    eq(a,b)     { return a[0]===b[0] && a[1]===b[1]; }
+
+    step(action) {
+      if (this.won) return false;
+      const [dr,dc] = DIRS[action];
+      const [ar,ac] = this.agent;
+      const nr = ar+dr, nc = ac+dc;
+
+      if (this.isWall(nr,nc)) return false;
+
+      if (this.eq([nr,nc], this.box)) {
+        const nbr = nr+dr, nbc = nc+dc;
+        if (this.isWall(nbr,nbc)) return false;
+        this.box = [nbr,nbc];
+        if (this.eq(this.box, this.target)) this.won = true;
+      }
+
+      this.agent = [nr,nc];
+      this.moves++;
+      return true;
+    }
+
+    cellType(r,c) {
+      if (this.isWall(r,c))                               return 'wall';
+      if (this.eq([r,c],this.box) && this.eq([r,c],this.target)) return 'boxOnTarget';
+      if (this.eq([r,c],this.agent) && this.eq([r,c],this.target)) return 'agentOnTarget';
+      if (this.eq([r,c],this.box))                        return 'box';
+      if (this.eq([r,c],this.agent))                      return 'agent';
+      if (this.eq([r,c],this.target))                     return 'target';
+      return 'empty';
+    }
+
+    // Matrice de flottants — ce que voit l'encodeur
+    toMatrix() {
+      const V = {wall:0.2,empty:0.0,agent:0.5,box:0.8,target:1.0,boxOnTarget:0.9,agentOnTarget:0.6};
+      return Array.from({length:10}, (_,r) =>
+        Array.from({length:10}, (_,c) => V[this.cellType(r,c)])
+      );
+    }
+  }
+
+  // ================================================================
+  //  RENDERER
+  // ================================================================
+  function drawCell(ctx, r, c, type, S) {
+    const x = c*S, y = r*S;
+
+    // Fond
+    if (type === 'wall') {
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(x, y, S, S);
+      return;
+    }
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillRect(x, y, S, S);
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x+.5, y+.5, S-1, S-1);
+
+    // Marqueur de cible (croix verte)
+    if (['target','boxOnTarget','agentOnTarget'].includes(type)) {
+      const p = Math.max(4, S*0.22);
+      ctx.strokeStyle = '#22C55E';
+      ctx.lineWidth = S > 30 ? 2.5 : 1.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x+p, y+p);         ctx.lineTo(x+S-p, y+S-p);
+      ctx.moveTo(x+S-p, y+p);       ctx.lineTo(x+p,   y+S-p);
+      ctx.stroke();
+    }
+
+    // Boîte (rectangle arrondi)
+    if (['box','boxOnTarget'].includes(type)) {
+      const col = type==='boxOnTarget' ? '#F97316' : '#EF4444';
+      const pad = Math.max(3, S*0.12);
+      roundRect(ctx, x+pad, y+pad, S-pad*2, S-pad*2, S*0.13, col);
+    }
+
+    // Agent (cercle)
+    if (['agent','agentOnTarget'].includes(type)) {
+      const col = type==='agentOnTarget' ? '#7C3AED' : '#2563EB';
+      const r2 = S/2 - Math.max(3, S*0.12);
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(x+S/2, y+S/2, r2, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  function roundRect(ctx, x, y, w, h, r, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function renderGrid(canvas, game, S) {
+    const ctx = canvas.getContext('2d');
+    for (let r = 0; r < 10; r++)
+      for (let c = 0; c < 10; c++)
+        drawCell(ctx, r, c, game.cellType(r,c), S);
+  }
+
+  // ================================================================
+  //  MATRIX DISPLAY
+  // ================================================================
+  const MAT_COLORS = {
+    '0.0':'#4B5563', '0.2':'#94A3B8', '0.5':'#60A5FA',
+    '0.8':'#F87171', '1.0':'#4ADE80', '0.9':'#FB923C', '0.6':'#A78BFA'
+  };
+  function updateMatrix(game) {
+    const m = game.toMatrix();
+    const el = document.getElementById('matrixDisplay');
+    let html = '';
+    m.forEach((row,ri) => {
+      row.forEach((v,ci) => {
+        const s = v.toFixed(1);
+        const col = MAT_COLORS[s] || '#9CA3AF';
+        html += `<span style="color:${col}">${s}</span>`;
+        if (ci < 9) html += ' ';
+      });
+      if (ri < 9) html += '\n';
+    });
+    el.innerHTML = html;
+  }
+
+  // ================================================================
+  //  MAIN GAME
+  // ================================================================
+  const gameCanvas = document.getElementById('gameCanvas');
+  const CELL = 40;
+  const game = new GridWorld();
+
+  function redraw() {
+    renderGrid(gameCanvas, game, CELL);
+    updateMatrix(game);
+    const statusEl = document.getElementById('statusText');
+    if (game.won) {
+      statusEl.innerHTML = `<span class="win-msg">🎉 Victoire en ${game.moves} coups !</span>`;
+      gameCanvas.classList.remove('active');
+    } else {
+      statusEl.innerHTML = `Coups : <span class="moves">${game.moves}</span>`;
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (KEY_MAP[e.key] !== undefined) {
+      e.preventDefault();
+      game.step(KEY_MAP[e.key]);
+      redraw();
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    game.reset();
+    redraw();
+  });
+
+  gameCanvas.addEventListener('focus', () => {
+    if (!game.won) gameCanvas.classList.add('active');
+  });
+  gameCanvas.addEventListener('blur', () => gameCanvas.classList.remove('active'));
+
+  redraw();
+
+  // ================================================================
+  //  RULE MINI DEMOS
+  // ================================================================
+  const RULE_DEFS = [
+    {
+      title: 'Mouvement libre',
+      desc: "L'agent se déplace librement vers toute case vide adjacente.",
+      badge: '→ Droite',
+      before: { agent:[5,4], box:[2,7], target:[7,7] },
+      action: 3
+    },
+    {
+      title: 'Mur bloquant',
+      desc: "L'agent est bloqué s'il essaie de franchir le périmètre de murs.",
+      badge: '↑ Haut',
+      before: { agent:[1,5], box:[6,6], target:[7,3] },
+      action: 0
+    },
+    {
+      title: 'Poussée valide',
+      desc: "L'agent peut pousser la boîte si la case derrière elle est libre.",
+      badge: '→ Droite',
+      before: { agent:[5,4], box:[5,5], target:[5,8] },
+      action: 3
+    },
+    {
+      title: 'Boîte bloquée par mur',
+      desc: "Si le mur est derrière la boîte, ni la boîte ni l'agent ne bougent.",
+      badge: '→ Droite',
+      before: { agent:[5,7], box:[5,8], target:[2,2] },
+      action: 3
+    },
+    {
+      title: 'Boîte verrouillée',
+      desc: "Une fois sur la cible, la boîte est verrouillée — elle ne peut plus être poussée.",
+      badge: '→ Droite',
+      before: { agent:[5,4], box:[5,5], target:[5,5] },
+      action: 3
+    }
+  ];
+
+  function makeScenarioWorld(def) {
+    const w = new GridWorld();
+    w.agent = [...def.before.agent];
+    w.box   = [...def.before.box];
+    w.target= [...def.before.target];
+    w.won   = w.eq(w.box, w.target);
+    w.moves = 0;
+    return w;
+  }
+
+  function makeAfterWorld(def) {
+    const w = makeScenarioWorld(def);
+    w.step(def.action);
+    return w;
+  }
+
+  function buildRuleMiniCanvas(world, size) {
+    const S = size;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = S * 10;
+    cv.style.borderRadius = '8px';
+    cv.style.border = '1px solid #E2E8F0';
+    renderGrid(cv, world, S);
+    return cv;
+  }
+
+  function buildRuleCards() {
+    const list = document.getElementById('rulesList');
+    const S = 18; // cell size for mini grids
+    RULE_DEFS.forEach(def => {
+      const before = makeScenarioWorld(def);
+      const after  = makeAfterWorld(def);
+
+      const card = document.createElement('div');
+      card.className = 'rule-card';
+
+      // before canvas
+      const beforeWrap = document.createElement('div');
+      beforeWrap.className = 'rule-canvas-wrap';
+      const beforeLbl = document.createElement('span');
+      beforeLbl.textContent = 'Avant';
+      beforeWrap.appendChild(buildRuleMiniCanvas(before, S));
+      beforeWrap.appendChild(beforeLbl);
+
+      // arrow
+      const arrow = document.createElement('div');
+      arrow.className = 'rule-arrow';
+      arrow.innerHTML = `<div style="font-size:0.7rem;color:var(--accent);font-weight:600;margin-bottom:2px">${def.badge}</div><div>→</div>`;
+
+      // after canvas
+      const afterWrap = document.createElement('div');
+      afterWrap.className = 'rule-canvas-wrap';
+      const afterLbl = document.createElement('span');
+      afterLbl.textContent = 'Après';
+      afterWrap.appendChild(buildRuleMiniCanvas(after, S));
+      afterWrap.appendChild(afterLbl);
+
+      // text
+      const text = document.createElement('div');
+      text.className = 'rule-text';
+      text.innerHTML = `<h3>${def.title}</h3><p>${def.desc}</p>`;
+
+      card.appendChild(beforeWrap);
+      card.appendChild(arrow);
+      card.appendChild(afterWrap);
+      card.appendChild(text);
+      list.appendChild(card);
+    });
+  }
+
+  buildRuleCards();
+
+  // ================================================================
+  //  SCROLL REVEAL
+  // ================================================================
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  </script>
+  <script src="nav.js"></script>
+</body>
+</html>

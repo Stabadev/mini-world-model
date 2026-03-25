@@ -1,0 +1,267 @@
+# 📄 DOCUMENT 2 — VERSION PÉDAGOGIQUE & NARRATIVE
+
+## “Apprendre à une machine à comprendre un petit monde”
+
+---
+
+# 🧠 Et si une machine pouvait “imaginer” ?
+
+Quand tu réfléchis avant d’agir, tu fais quelque chose de très particulier :
+
+* tu imagines une situation
+* tu simules ce qui pourrait se passer
+* tu choisis la meilleure option
+
+👉 sans bouger réellement
+
+C’est exactement ça qu’on appelle un **world model** :
+
+> une représentation interne du monde qui permet d’imaginer le futur.
+
+---
+
+# 🎮 Le terrain de jeu
+
+Pour comprendre cette idée, on ne commence pas avec un robot ou une voiture autonome.
+
+On commence avec quelque chose de beaucoup plus simple :
+
+👉 un petit monde en 2D
+
+---
+
+## Ce monde contient :
+
+* un agent (le joueur)
+* une boîte
+* une cible
+* des murs
+
+Tout est vu du dessus, comme un mini jeu.
+
+---
+
+## Les règles sont simples :
+
+* l’agent peut se déplacer
+* il peut pousser la boîte
+* il ne peut pas traverser les murs
+
+---
+
+# 🧪 L’idée du projet
+
+On va faire quelque chose de contre-intuitif :
+
+👉 **on ne va pas expliquer les règles à la machine**
+
+On va simplement lui montrer des exemples :
+
+* “voilà une situation”
+* “voilà l’action”
+* “voilà ce qui s’est passé ensuite”
+
+Encore et encore.
+
+---
+
+# 🧠 Ce que la machine apprend
+
+À force de voir ces transitions, elle apprend une chose :
+
+> “si je vois ça, et que je fais ça… voilà ce qui va se passer”
+
+Elle ne connaît pas les règles.
+Elle ne sait pas ce qu’est une “boîte” ou un “mur”.
+
+Mais elle apprend :
+
+👉 les régularités du monde
+
+---
+
+# 🔮 Une machine qui imagine
+
+Une fois entraînée, la machine peut faire quelque chose de nouveau :
+
+👉 **imaginer le futur**
+
+On peut lui dire :
+
+* “voici la situation actuelle”
+* “et si je faisais cette action ?”
+
+Elle peut répondre :
+
+> “voilà à quoi ressemblerait la situation suivante”
+
+---
+
+Et mieux encore :
+
+👉 on peut lui donner **une suite d’actions**
+
+* droite, droite, haut…
+
+Et elle peut simuler :
+
+> “voilà où tu arriverais”
+
+---
+
+# 🤖 De la prédiction à la décision
+
+C’est là que ça devient intéressant.
+
+On ne demande pas à la machine de décider directement.
+
+On fait :
+
+1. proposer plusieurs plans possibles
+2. demander à la machine d’imaginer le résultat de chacun
+3. choisir le meilleur
+
+👉 exactement comme un humain qui réfléchit avant d’agir
+
+---
+
+# 🎯 Exemple concret
+
+Situation :
+
+* la boîte est au milieu
+* la cible est à droite
+
+On teste plusieurs idées :
+
+* aller à droite deux fois
+* monter puis aller à droite
+* faire un détour
+
+La machine simule chaque possibilité.
+
+Et on choisit celle qui rapproche le plus de l’objectif.
+
+---
+
+# 🧠 Mais… comprend-elle vraiment ?
+
+C’est la vraie question.
+
+Pour y répondre, on fait plusieurs expériences.
+
+---
+
+## 🔍 1. Regarder “dans sa tête”
+
+On prend plein de situations différentes.
+
+On regarde comment la machine les représente.
+
+👉 surprise :
+
+les situations similaires sont proches entre elles.
+
+Elle a construit une sorte de **carte mentale du monde**.
+
+---
+
+## 🧠 2. Lire ce qu’elle a appris
+
+On regarde si, à partir de sa représentation interne, on peut retrouver :
+
+* la position de l’agent
+* la position de la boîte
+
+👉 si oui :
+
+cela veut dire qu’elle encode réellement la structure du monde.
+
+---
+
+## 🤖 3. Voir si elle aide à agir
+
+On l’utilise pour choisir des actions.
+
+👉 résultat :
+
+elle permet de se rapprocher du but.
+
+Elle ne “sait” pas quoi faire directement,
+mais elle aide à choisir.
+
+---
+
+## 🚨 4. La surprendre
+
+On lui montre des choses impossibles :
+
+* une boîte qui traverse un mur
+* une téléportation
+
+👉 elle réagit :
+
+ses prédictions deviennent mauvaises
+
+Comme si elle disait :
+
+> “ça ne correspond pas à ce que je connais”
+
+---
+
+# 🌍 Aller plus loin
+
+Une fois que ça marche, on peut changer le monde :
+
+* ajouter des obstacles
+* changer la forme
+* agrandir le terrain
+
+👉 et voir si elle s’adapte
+
+---
+
+# 🤯 Pourquoi c’est intéressant
+
+Parce que ce qu’on construit ici, à petite échelle, c’est exactement l’idée derrière :
+
+* les robots autonomes
+* les voitures autonomes
+* certaines formes d’IA générale
+
+---
+
+# 💡 Le point clé
+
+Ce projet montre une idée fondamentale :
+
+> une machine peut apprendre comment fonctionne un monde, simplement en observant ce qui s’y passe
+
+Et ensuite :
+
+> utiliser ce savoir pour imaginer le futur et choisir quoi faire
+
+---
+
+# 🧭 En résumé
+
+* on crée un petit monde
+* on montre des exemples à une machine
+* elle apprend les règles sans qu’on les lui dise
+* elle peut ensuite prédire et aider à décider
+
+---
+
+# 🔥 La phrase à retenir
+
+> Ce projet ne montre pas comment résoudre un jeu.
+> Il montre comment une machine peut apprendre à comprendre un monde.
+
+---
+
+Si tu veux, je peux maintenant t’aider à transformer ça en :
+
+* README GitHub ultra propre
+* post LinkedIn
+* ou pitch oral (2 min / 5 min / 10 min)
+

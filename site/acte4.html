@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acte 4 — Les limites · Mini World Model</title>
+  <meta name="description" content="Le rollout tient, mais le planning échoue. Ce que ça révèle sur les limites fondamentales des architectures JEPA." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+
+    /* ── rollout chart ── */
+    .rollout-img-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--bg-soft);
+      margin: 2rem 0;
+      cursor: zoom-in;
+      transition: opacity 0.15s;
+    }
+    .rollout-img-card:hover { opacity: 0.9; }
+    .rollout-img-card img { width: 100%; display: block; }
+    .rollout-img-caption {
+      padding: 0.75rem 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── step MSE chart ── */
+    .step-chart-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin: 2rem 0;
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .step-chart-card canvas { display: block; min-width: 560px; }
+    .step-chart-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 0.75rem;
+      font-style: italic;
+    }
+
+    /* ── decoder demo ── */
+    .decoder-demo {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2rem;
+      align-items: start;
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+    .decoder-canvas-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .decoder-canvas-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-light);
+    }
+    .decoder-info { display: flex; flex-direction: column; gap: 1rem; justify-content: center; }
+    .decoder-metric {
+      padding: 1rem 1.25rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .decoder-metric .dm-value {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #DC2626;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+    .decoder-metric .dm-label {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+    }
+    .decoder-toggle {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .decoder-toggle button {
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .decoder-toggle button.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    /* ── tension diagram ── */
+    .tension-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .tension-card {
+      padding: 1.25rem;
+      border-radius: var(--radius);
+      border: 1.5px solid;
+    }
+    .tension-card.good  { border-color: #86EFAC; background: #F0FDF4; }
+    .tension-card.limit { border-color: #FCA5A5; background: #FEF2F2; }
+    .tension-card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.6rem;
+    }
+    .tension-card.good  h3 { color: #15803D; }
+    .tension-card.limit h3 { color: #DC2626; }
+    .tension-card p { font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.6; }
+    .tension-card ul { font-size: 0.875rem; color: var(--text-muted); margin: 0; padding-left: 1.1rem; line-height: 1.8; }
+
+    /* ── solutions ── */
+    .solutions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .solution-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1.25rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      align-items: flex-start;
+    }
+    .solution-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .solution-body h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+    .solution-body p  { font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.6; }
+
+    /* ── lightbox ── */
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 2rem;
+      cursor: zoom-out;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img {
+      max-width: min(90vw, 900px);
+      max-height: 80vh;
+      border-radius: var(--radius);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+      object-fit: contain;
+    }
+    #lightbox-caption {
+      margin-top: 1rem;
+      max-width: min(90vw, 900px);
+      font-size: 0.875rem;
+      color: #CBD5E1;
+      line-height: 1.6;
+      text-align: center;
+    }
+    #lightbox-close {
+      position: absolute;
+      top: 1.25rem; right: 1.5rem;
+      font-size: 1.5rem;
+      color: #94A3B8;
+      cursor: pointer;
+      background: none; border: none;
+      padding: 0.25rem;
+      transition: color 0.15s;
+    }
+    #lightbox-close:hover { color: #F1F5F9; }
+
+    /* ── act nav ── */
+    .act-nav {
+      display: flex;
+      justify-content: space-between;
+      padding: 3rem 0 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    .act-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.6rem 1.25rem;
+      border: 1.5px solid var(--accent-mid);
+      border-radius: var(--radius);
+      background: var(--accent-light);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .act-nav a:hover { background: #DBEAFE; border-color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .tension-grid { grid-template-columns: 1fr; }
+      .decoder-demo { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">Mini <span>World Model</span></a>
+      <ul class="nav-links">
+        <li><a href="acte1.html">Acte 1 — Environnement</a></li>
+        <li><a href="acte2.html">Acte 2 — Entraînement</a></li>
+        <li><a href="acte3.html">Acte 3 — Représentation</a></li>
+        <li><a href="acte4.html" class="active">Acte 4 — Limites</a></li>
+        <li><a href="conclusion.html">Conclusion</a></li>
+      </ul>
+      <a href="https://github.com/Stabadev/mini-world-model" class="nav-github" target="_blank" rel="noopener">GitHub ↗</a>
+      <button class="nav-burger" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <p class="eyebrow">Acte 4</p>
+      <h1>Les limites</h1>
+      <p class="hero-lead">
+        Le modèle prédit bien. L'espace latent est structuré.
+        Peut-il maintenant planifier — imaginer une suite d'actions
+        pour atteindre un objectif ? La réponse est non.
+        Et comprendre pourquoi est peut-être la leçon la plus intéressante du projet.
+      </p>
+    </section>
+
+    <!-- SECTION 1 : ROLLOUT -->
+    <section class="reveal">
+      <p class="eyebrow">Ce qui fonctionne</p>
+      <h2>Le rollout multi-step est stable</h2>
+
+      <p>
+        On commence par tester la capacité du modèle à simuler des séquences d'actions
+        dans l'imaginaire — sans jamais revenir à la vraie grille.
+        À partir d'un état initial encodé z₀, on applique répétitivement le prédicteur :
+        z₁ = f(z₀, a₀), z₂ = f(z₁, a₁), … jusqu'à un horizon H.
+        Puis on compare chaque zₜ prédit au vrai zₜ produit par l'encodeur.
+      </p>
+
+      <!-- Single example step chart -->
+      <div class="step-chart-card">
+        <div style="font-weight:700;font-size:0.95rem;margin-bottom:1rem">
+          Erreur MSE pas à pas — exemple concret
+          <span style="font-weight:400;font-size:0.83rem;color:var(--text-muted);margin-left:0.75rem">
+            Agent (5,3) · Boîte (5,5) · Cible (5,7) · 4 actions →
+          </span>
+        </div>
+        <canvas id="stepChart" width="640" height="200"></canvas>
+        <div class="step-chart-label">
+          L'erreur reste quasi nulle sur les premiers pas, puis augmente progressivement.
+        </div>
+      </div>
+
+      <p>
+        Sur 20 horizons et 50 cas de test aléatoires, la même tendance se confirme :
+        l'erreur croît graduellement, sans jamais exploser.
+        Le modèle ne "s'emballe" pas — c'est une dérive lente, pas un effondrement.
+      </p>
+
+      <!-- Rollout error image -->
+      <div class="rollout-img-card" id="rolloutImgCard">
+        <img src="assets/04_rollout_errors_v3.png"
+             alt="Erreur de rollout en fonction de l'horizon"
+             loading="lazy" />
+        <div class="rollout-img-caption" id="rolloutCaption">
+          <strong>Erreur de rollout sur 50 cas aléatoires, horizon 1→20.</strong>
+          La courbe monte régulièrement mais sans rupture — signe d'une représentation
+          cohérente et stable, même si imprécise sur le long terme.
+        </div>
+      </div>
+
+      <div class="insight-box">
+        <p>
+          Une erreur de rollout qui "explose" indiquerait que le modèle
+          produit des représentations instables — chaque prédiction amplifie
+          l'erreur précédente. Ce n'est pas ce qu'on observe.
+          La dérive est <strong>bornée et prévisible</strong>,
+          ce qui est la signature d'un modèle qui a bien compris la dynamique locale.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 2 : PLANNING ATTEMPT -->
+    <section class="reveal">
+      <p class="eyebrow">Ce qui échoue</p>
+      <h2>Le planning nécessite de savoir où est la cible</h2>
+
+      <p>
+        Pour planifier, on a besoin d'une <strong>fonction de coût</strong> :
+        une mesure qui dit "est-ce que l'état imaginé est proche du but ?"
+        Dans l'espace latent, ça revient à trouver le vecteur latent du but,
+        puis à minimiser la distance entre ce vecteur et le vecteur prédit à l'horizon H.
+      </p>
+
+      <p>
+        L'approche tentée : entraîner un <strong>décodeur de position</strong>
+        — un petit réseau qui prédit les coordonnées (ligne, colonne) de la boîte
+        à partir du vecteur latent. Si le décodeur est précis, on peut l'utiliser
+        pour guider la recherche : "quelle séquence d'actions rapproche la boîte
+        de la cible ?"
+      </p>
+
+      <!-- Decoder demo -->
+      <div class="decoder-demo">
+        <div class="decoder-canvas-wrap">
+          <canvas id="decoderCanvas" width="200" height="200"></canvas>
+          <div class="decoder-canvas-label">Précision du décodeur</div>
+          <div class="decoder-toggle">
+            <button data-pos="3,3" class="active">Boîte en (3,3)</button>
+            <button data-pos="5,5">Boîte en (5,5)</button>
+            <button data-pos="7,2">Boîte en (7,2)</button>
+          </div>
+        </div>
+        <div class="decoder-info">
+          <div class="decoder-metric">
+            <div class="dm-value">2.3</div>
+            <div class="dm-label">cases d'erreur en moyenne<br>sur une grille de 10×10</div>
+          </div>
+          <div class="decoder-metric" style="border-color:#FDE68A;background:#FFFBEB">
+            <div class="dm-value" style="color:#D97706;font-size:1.5rem">23%</div>
+            <div class="dm-label">de la largeur de la grille —<br>trop imprécis pour guider un plan</div>
+          </div>
+          <p style="font-size:0.83rem;color:var(--text-muted);line-height:1.6;margin:0">
+            Le cercle orange représente la zone d'incertitude du décodeur autour
+            de la vraie position (point vert). On ne peut pas piloter un agent
+            avec une boussole aussi floue.
+          </p>
+        </div>
+      </div>
+
+      <p>
+        Le décodeur de position a été entraîné sur 5 000 états aléatoires (split 80/20).
+        Son erreur de validation est de <strong>5.31 MSE</strong>, soit
+        <strong>2.3 cases d'écart en moyenne</strong>.
+        Sur une grille de 8×8 cases jouables, c'est catastrophique :
+        le décodeur confond des positions distantes de plusieurs cases.
+        Il ne sait pas distinguer "la boîte est à côté de la cible"
+        de "la boîte est à l'autre bout de la grille".
+      </p>
+    </section>
+
+    <!-- SECTION 3 : TENSION FONDAMENTALE -->
+    <section class="reveal">
+      <p class="eyebrow">L'analyse</p>
+      <h2>La tension fondamentale de JEPA</h2>
+
+      <p>
+        Ces résultats ne sont pas un accident d'implémentation.
+        Ils révèlent une tension structurelle dans la façon dont
+        le world model est entraîné.
+      </p>
+
+      <div class="tension-grid">
+        <div class="tension-card good">
+          <h3>Ce que l'objectif d'entraînement optimise</h3>
+          <ul>
+            <li>Prédire z<sub>t+1</sub> depuis z<sub>t</sub> et l'action</li>
+            <li>Capturer la dynamique <em>locale</em> : que se passe-t-il au prochain pas ?</li>
+            <li>Encoder ce qui est utile pour <em>prédire</em></li>
+          </ul>
+        </div>
+        <div class="tension-card limit">
+          <h3>Ce que le planning requiert</h3>
+          <ul>
+            <li>Savoir <em>où est</em> la boîte dans l'espace absolu</li>
+            <li>Savoir <em>où est</em> la cible et ce que "atteindre" signifie</li>
+            <li>Encoder ce qui est utile pour <em>décider</em></li>
+          </ul>
+        </div>
+      </div>
+
+      <p>
+        Un modèle peut être excellent pour prédire le prochain état
+        sans jamais apprendre à se repérer dans l'espace.
+        Imaginons un humain qui apprend à conduire les yeux fermés en mémorisant
+        les vibrations du volant : il devient expert pour anticiper
+        la prochaine vibration, mais il ne saurait pas vous dire
+        où il se trouve sur la carte.
+      </p>
+
+      <p>
+        C'est exactement ce que fait ce world model.
+        Il a appris la physique des transitions.
+        Mais <strong>personne ne lui a demandé de retenir les coordonnées</strong>.
+        La loss de prédiction latente n'exige pas que le vecteur z encode
+        la position absolue — seulement qu'il encode <em>ce qui est nécessaire
+        pour prédire le z suivant</em>.
+      </p>
+
+      <div class="insight-box">
+        <p>
+          Le papier LeWM s'attaque à ce problème à plus grande échelle,
+          avec des environnements robotiques réels.
+          Leur solution : un espace latent bien plus grand (ViT, 192 dimensions),
+          un prédicteur transformer, et une régularisation SIGReg qui force
+          les représentations à suivre une distribution gaussienne isotrope.
+          Résultat : le planning fonctionne — mais il nécessite une architecture
+          et une régularisation significativement plus sophistiquées que les nôtres.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 4 : POUR ALLER PLUS LOIN -->
+    <section class="reveal">
+      <p class="eyebrow">Perspectives</p>
+      <h2>Ce qu'il faudrait changer</h2>
+
+      <p>
+        Le planning n'est pas impossible en principe —
+        il faut simplement changer ce qu'on demande au modèle d'apprendre.
+        Deux pistes identifiées :
+      </p>
+
+      <div class="solutions-list">
+        <div class="solution-item">
+          <div class="solution-num">1</div>
+          <div class="solution-body">
+            <h3>Ajouter une supervision de position à l'entraînement</h3>
+            <p>
+              Ajouter un terme de loss auxiliaire qui force le vecteur latent
+              à encoder explicitement la position de la boîte et de la cible.
+              Le modèle devra apprendre à "noter" ces coordonnées dans son vecteur —
+              pas seulement ce qui est utile pour prédire, mais aussi ce qui est utile
+              pour se repérer. C'est la direction des "auxiliary tasks" en RL et en SSL.
+            </p>
+          </div>
+        </div>
+        <div class="solution-item">
+          <div class="solution-num">2</div>
+          <div class="solution-body">
+            <h3>Augmenter massivement le dataset</h3>
+            <p>
+              Le dataset actuel (20 000 transitions) couvre bien les règles physiques
+              mais représente une fraction des configurations possibles.
+              Avec des millions de transitions couvrant uniformément toutes les positions
+              et tous les déplacements, le modèle serait forcé de développer
+              une représentation plus fine des positions absolues — par nécessité statistique.
+            </p>
+          </div>
+        </div>
+        <div class="solution-item">
+          <div class="solution-num">3</div>
+          <div class="solution-body">
+            <h3>Changer d'architecture encodeur</h3>
+            <p>
+              Le problème n'est pas le manque de capacité : décrire un état GridWorld
+              ne requiert que 6 nombres (positions de l'agent, de la boîte, de la cible),
+              et 32 dimensions sont bien suffisantes en théorie.
+              Le PC1 = 92% ne dit pas que l'espace est trop petit —
+              il dit que le modèle n'a besoin que d'une seule direction
+              pour bien prédire le pas suivant.
+              Avec un encodeur plus expressif (ViT, attention) et une régularisation
+              plus forte (comme SIGReg), on pourrait forcer une utilisation plus équilibrée
+              de l'espace latent, et éviter que tout se concentre sur un seul axe.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5 : CONCLUSION -->
+    <section class="reveal">
+      <p class="eyebrow">Conclusion</p>
+      <h2>Ce que ce projet montre, vraiment</h2>
+
+      <p>
+        Ce projet n'est pas une démonstration de succès. C'est une exploration honnête
+        d'une idée — et les endroits où elle accroche sont au moins aussi
+        instructifs que les endroits où elle fonctionne.
+      </p>
+
+      <p>
+        Le world model <strong>fonctionne</strong> au sens où il a appris
+        quelque chose de réel sur la physique du monde simulé.
+        Il peut prédire, il peut simuler, son espace latent est structuré.
+        C'est déjà remarquable pour un modèle de 15 000 paramètres
+        entraîné sans aucune étiquette humaine, sans récompense, sans supervision.
+      </p>
+
+      <p>
+        Mais il <strong>échoue</strong> là où ça compte pour l'autonomie :
+        il ne comprend pas ce qu'est un objectif.
+        Il ne sait pas représenter "la boîte doit rejoindre la cible"
+        parce que personne ne le lui a demandé.
+        La loss de prédiction est aveugle aux buts.
+      </p>
+
+      <p>
+        Ce projet suit précisément l'approche que LeCun défend comme alternative aux LLMs :
+        apprendre un modèle du monde en espace latent, sans reconstruction pixel,
+        pour pouvoir planifier. Les résultats montrent que l'idée tient —
+        mais que <strong>l'objectif d'entraînement seul ne suffit pas</strong>
+        à obtenir une représentation orientée vers l'action.
+        Il faut contraindre explicitement ce que le modèle doit retenir.
+      </p>
+
+      <div class="insight-box">
+        <p>
+          En d'autres termes : construire un world model ne garantit pas
+          qu'il encode ce dont on a besoin pour planifier.
+          C'est la tension que le papier LeWM résout avec une architecture plus puissante —
+          et que ce projet illustre, à petite échelle, de façon tangible et mesurable.
+        </p>
+      </div>
+    </section>
+
+    <div class="act-nav">
+      <a href="acte3.html">← Acte 3 — Représentation</a>
+      <a href="conclusion.html">Conclusion →</a>
+    </div>
+
+  </main>
+
+  <!-- LIGHTBOX -->
+  <div id="lightbox" role="dialog" aria-modal="true">
+    <button id="lightbox-close" aria-label="Fermer">✕</button>
+    <img id="lightbox-img" src="" alt="" />
+    <div id="lightbox-caption"></div>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Mini World Model — Projet personnel de recherche</span>
+      <span>
+        <a href="https://github.com/Stabadev/mini-world-model" target="_blank" rel="noopener">GitHub</a>
+        &nbsp;·&nbsp;
+        <a href="research/references/leWorldModel.pdf" target="_blank">LeWM paper</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+  // ================================================================
+  //  STEP-BY-STEP MSE CHART
+  //  Données réelles : agent (5,3), boîte (5,5), cible (5,7), 4 actions →
+  // ================================================================
+  const STEP_MSE = [0.0, 4.25e-5, 2.22e-4, 7.55e-3, 7.77e-3];
+  const STEP_LABELS = ['Départ', 'Pas 1', 'Pas 2', 'Pas 3', 'Pas 4'];
+
+  (function drawStepChart() {
+    const cv  = document.getElementById('stepChart');
+    const ctx = cv.getContext('2d');
+    const M   = { top: 24, right: 24, bottom: 50, left: 80 };
+    const W   = cv.width  - M.left - M.right;
+    const H   = cv.height - M.top  - M.bottom;
+    const N   = STEP_MSE.length;
+    const Y_MAX = 0.012;
+
+    function xS(i) { return M.left + (i / (N-1)) * W; }
+    function yS(v) { return M.top  + (1 - v / Y_MAX) * H; }
+
+    // Grid + axes
+    ctx.strokeStyle = '#F1F5F9'; ctx.lineWidth = 1;
+    [0, 0.003, 0.006, 0.009, 0.012].forEach(v => {
+      ctx.beginPath(); ctx.moveTo(M.left, yS(v)); ctx.lineTo(M.left + W, yS(v)); ctx.stroke();
+      ctx.fillStyle = '#94A3B8'; ctx.textAlign = 'right'; ctx.font = '11px Inter, sans-serif';
+      ctx.fillText(v === 0 ? '0' : v.toFixed(3), M.left - 8, yS(v) + 4);
+    });
+
+    ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(M.left, M.top); ctx.lineTo(M.left, M.top + H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(M.left, M.top + H); ctx.lineTo(M.left + W, M.top + H); ctx.stroke();
+
+    // X labels
+    STEP_LABELS.forEach((lbl, i) => {
+      ctx.fillStyle = '#94A3B8'; ctx.textAlign = 'center'; ctx.font = '11px Inter, sans-serif';
+      ctx.fillText(lbl, xS(i), M.top + H + 18);
+    });
+
+    // Area fill
+    ctx.beginPath();
+    ctx.moveTo(xS(0), yS(0));
+    STEP_MSE.forEach((v, i) => ctx.lineTo(xS(i), yS(v)));
+    ctx.lineTo(xS(N-1), M.top + H);
+    ctx.lineTo(xS(0), M.top + H);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(37, 99, 235, 0.07)';
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    STEP_MSE.forEach((v, i) => i === 0 ? ctx.moveTo(xS(i), yS(v)) : ctx.lineTo(xS(i), yS(v)));
+    ctx.stroke();
+
+    // Dots + value labels
+    STEP_MSE.forEach((v, i) => {
+      ctx.fillStyle = '#2563EB';
+      ctx.beginPath(); ctx.arc(xS(i), yS(v), 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'white';
+      ctx.beginPath(); ctx.arc(xS(i), yS(v), 2.5, 0, Math.PI * 2); ctx.fill();
+      if (v > 0) {
+        ctx.fillStyle = '#475569'; ctx.textAlign = 'center'; ctx.font = 'bold 10px Inter, sans-serif';
+        const label = v < 0.001 ? v.toExponential(2) : v.toFixed(4);
+        ctx.fillText(label, xS(i), yS(v) - 10);
+      }
+    });
+
+    // Y axis title
+    ctx.save();
+    ctx.fillStyle = '#64748B'; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.translate(14, M.top + H / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('MSE latent', 0, 0);
+    ctx.restore();
+  })();
+
+  // ================================================================
+  //  DECODER POSITION DEMO
+  // ================================================================
+  const CELL  = 18;
+  const G     = 10;
+
+  const DEMO_POSITIONS = {
+    '3,3': { box: [3, 3], err: 2.3 },
+    '5,5': { box: [5, 5], err: 2.3 },
+    '7,2': { box: [7, 2], err: 2.3 },
+  };
+
+  function drawDecoderDemo(posKey) {
+    const cv  = document.getElementById('decoderCanvas');
+    const ctx = cv.getContext('2d');
+    const { box, err } = DEMO_POSITIONS[posKey];
+    ctx.clearRect(0, 0, cv.width, cv.height);
+
+    // Grid cells
+    for (let r = 0; r < G; r++) {
+      for (let c = 0; c < G; c++) {
+        const x = c * CELL, y = r * CELL;
+        const isWall = r === 0 || r === 9 || c === 0 || c === 9;
+        ctx.fillStyle = isWall ? '#334155' : '#F8FAFC';
+        ctx.fillRect(x, y, CELL, CELL);
+        if (!isWall) {
+          ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 0.5;
+          ctx.strokeRect(x + .5, y + .5, CELL - 1, CELL - 1);
+        }
+      }
+    }
+
+    // Uncertainty circle (decoder error zone)
+    const cx = box[1] * CELL + CELL / 2;
+    const cy = box[0] * CELL + CELL / 2;
+    const radius = err * CELL;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(249, 115, 22, 0.15)';
+    ctx.fill();
+    ctx.strokeStyle = '#F97316'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // True box position (green dot)
+    ctx.fillStyle = '#22C55E';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Init
+  drawDecoderDemo('3,3');
+
+  document.querySelectorAll('.decoder-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.decoder-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      drawDecoderDemo(btn.dataset.pos);
+    });
+  });
+
+  // ================================================================
+  //  LIGHTBOX
+  // ================================================================
+  const lightbox  = document.getElementById('lightbox');
+  const lbImg     = document.getElementById('lightbox-img');
+  const lbCaption = document.getElementById('lightbox-caption');
+
+  document.getElementById('rolloutImgCard').addEventListener('click', () => {
+    const img     = document.querySelector('#rolloutImgCard img');
+    const caption = document.getElementById('rolloutCaption');
+    lbImg.src     = img.src;
+    lbImg.alt     = img.alt;
+    lbCaption.innerHTML = caption ? caption.innerHTML : '';
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  });
+
+  function closeLightbox() { lightbox.classList.remove('open'); document.body.style.overflow = ''; }
+  document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', e => { if (e.target === lightbox || e.target === lbImg) closeLightbox(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  // ================================================================
+  //  SCROLL REVEAL
+  // ================================================================
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  </script>
+
+  <script src="nav.js"></script>
+</body>
+</html>

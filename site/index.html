@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini World Model — Apprendre à prédire un monde</title>
+  <meta name="description" content="Une exploration des world models et de l'architecture JEPA sur un environnement simulé — de l'entraînement à la planification en passant par l'analyse de l'espace latent." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ========================
+       NAVIGATION
+       ======================== -->
+  <nav>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">Mini <span>World Model</span></a>
+      <ul class="nav-links">
+        <li><a href="acte1.html">Acte 1 — Environnement</a></li>
+        <li><a href="acte2.html">Acte 2 — Entraînement</a></li>
+        <li><a href="acte3.html">Acte 3 — Représentation</a></li>
+        <li><a href="acte4.html">Acte 4 — Planning</a></li>
+        <li><a href="conclusion.html">Conclusion</a></li>
+      </ul>
+      <a href="https://github.com/Stabadev/mini-world-model" class="nav-github" target="_blank" rel="noopener">
+        GitHub ↗
+      </a>
+      <button class="nav-burger" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- ========================
+         HERO
+         ======================== -->
+    <section class="hero">
+      <p class="eyebrow">Projet de recherche &amp; exploration</p>
+      <h1>Apprendre à prédire<br>un monde</h1>
+      <p class="hero-lead">
+        Peut-on entraîner une machine à comprendre les lois d'un monde simplement
+        en l'observant — sans lui en expliquer les règles ?
+        C'est le pari des <strong>modèles monde</strong>, et c'est ce que ce projet explore.
+      </p>
+      <div class="hero-tags">
+        <span class="tag">World Models</span>
+        <span class="tag">JEPA</span>
+        <span class="tag">PyTorch</span>
+        <span class="tag">Espace latent</span>
+        <span class="tag">Planning</span>
+        <span class="tag">Auto-supervisé</span>
+      </div>
+    </section>
+
+    <!-- ========================
+         CONTEXTE
+         ======================== -->
+    <section class="reveal">
+      <p class="eyebrow">Le point de départ</p>
+      <h2>Yann LeCun, AMI Labs, et la promesse d'une révolution</h2>
+
+      <p>
+        En mars 2026, Yann LeCun — récipiendaire du prix Turing et ancien Chief AI Scientist
+        de Meta — annonce la création de son laboratoire <strong>AMI</strong>
+        (Advanced Machine Intelligence), avec une ambition explicite : construire la
+        prochaine génération d'intelligence artificielle en repartant de zéro sur l'architecture.
+      </p>
+
+      <p>
+        Sa thèse est tranchante. Les grands modèles de langage (LLMs) — GPT, Claude,
+        Gemini — sont impressionnants, mais fondamentalement limités.
+        Ils manipulent des séquences de tokens discrets.
+        Or, le monde réel n'est pas du texte.
+      </p>
+
+      <div class="quote-block">
+        <p>
+          « Le monde est beaucoup plus complexe que la langue. On a l'impression,
+          en tant qu'humain, qu'une entité est intelligente si elle manipule la langue —
+          mais on est trompé. La langue, c'est une séquence de symboles discrets.
+          Le monde réel est bien plus complexe, et le comprendre nécessite des techniques
+          complètement différentes. La question, c'est : comment faire en sorte que les machines
+          apprennent le monde en l'observant, à la manière d'un jeune enfant, ou même
+          d'un chat de gouttière ? »
+        </p>
+        <p class="quote-source">
+          Yann LeCun — <a href="https://www.radiofrance.fr/franceinter/podcasts/l-invite-de-7h50/l-invite-de-7h50-du-mardi-10-mars-2026-6860645" target="_blank" rel="noopener">France Inter, L'invité du 7h50, 10 mars 2026</a>
+        </p>
+      </div>
+
+      <p>
+        La réponse de LeCun à cette question, c'est une architecture nouvelle : les
+        <strong>modèles monde</strong> (<em>world models</em>). L'idée n'est pas de
+        prédire des pixels, ni de reconstituer des images. C'est d'apprendre une
+        <em>représentation abstraite</em> du monde, et d'apprendre à prédire
+        comment cette représentation évolue quand on agit.
+      </p>
+
+      <p>
+        Ce projet est né de l'envie de comprendre cette idée de l'intérieur — pas en lisant
+        des papiers, mais en l'implémentant sur un monde minimal, de A à Z.
+        Le papier de référence : <strong>LeWM</strong> (<em>LeWorldModel</em>),
+        publié par Lucas Maes, Quentin Le Lidec et Yann LeCun en mars 2026.
+      </p>
+    </section>
+
+    <!-- ========================
+         L'IDÉE : JEPA
+         ======================== -->
+    <section class="reveal">
+      <p class="eyebrow">L'architecture</p>
+      <h2>JEPA — prédire dans l'abstrait, pas dans le pixel</h2>
+
+      <p>
+        L'idée centrale s'appelle <strong>JEPA</strong> : <em>Joint Embedding Predictive Architecture</em>.
+        Elle repose sur deux composants qui s'entraînent ensemble.
+      </p>
+
+      <p>
+        L'<strong>encodeur</strong> prend une observation du monde (une image, une grille, un état)
+        et la compresse en une représentation abstraite appelée <em>vecteur latent</em> — un
+        point dans un espace à faible dimension qui capture l'essentiel de la situation.
+        Le <strong>prédicteur</strong>, lui, prend ce vecteur latent et une action, et doit
+        anticiper le vecteur latent du prochain état.
+      </p>
+
+      <p>
+        La clé : on n'entraîne <em>pas</em> le système à reconstruire des images.
+        On l'entraîne à prédire <em>dans l'espace latent</em>.
+        L'encodeur doit produire une représentation que le prédicteur peut anticiper.
+        Le prédicteur doit anticiper ce que l'encodeur produira.
+        Ils s'améliorent ensemble.
+      </p>
+
+      <!-- Diagram -->
+      <div class="diagram-card">
+        <svg width="560" height="210" viewBox="0 0 560 210" xmlns="http://www.w3.org/2000/svg"
+             style="max-width:100%;font-family:Inter,sans-serif;">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="5" markerHeight="5" orient="auto">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#2563EB"/>
+            </marker>
+            <marker id="arr-amber" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="5" markerHeight="5" orient="auto">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#D97706"/>
+            </marker>
+            <marker id="arr-amber-up" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#2563EB"/>
+            </marker>
+          </defs>
+
+          <!-- ── TOP ROW (y_center = 52) ── -->
+
+          <!-- obs_t -->
+          <rect x="2" y="33" width="68" height="38" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+          <text x="36" y="51" text-anchor="middle" font-size="12" fill="#475569">obs</text>
+          <text x="36" y="64" text-anchor="middle" font-size="9" fill="#94A3B8">état t</text>
+
+          <!-- obs_t → Encoder -->
+          <line x1="70" y1="52" x2="84" y2="52" stroke="#2563EB" stroke-width="1.5" marker-end="url(#arr)"/>
+
+          <!-- Encoder top -->
+          <rect x="86" y="33" width="84" height="38" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.5"/>
+          <text x="128" y="55" text-anchor="middle" font-size="11" font-weight="600" fill="#2563EB">Encodeur ϕ</text>
+
+          <!-- Encoder → z_t -->
+          <line x1="170" y1="52" x2="182" y2="52" stroke="#2563EB" stroke-width="1.5" marker-end="url(#arr)"/>
+
+          <!-- z_t (latent) -->
+          <rect x="184" y="33" width="52" height="38" rx="7" fill="#DBEAFE" stroke="#93C5FD" stroke-width="2"/>
+          <text x="210" y="57" text-anchor="middle" font-size="16" font-weight="700" fill="#1D4ED8">z<tspan font-size="10" dy="4">t</tspan></text>
+
+          <!-- z_t → Predictor (long arrow) -->
+          <line x1="236" y1="52" x2="356" y2="52" stroke="#2563EB" stroke-width="1.5" marker-end="url(#arr)"/>
+
+          <!-- Predictor -->
+          <rect x="358" y="33" width="90" height="38" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.5"/>
+          <text x="403" y="55" text-anchor="middle" font-size="11" font-weight="600" fill="#2563EB">Prédicteur f</text>
+
+          <!-- Predictor → z_hat -->
+          <line x1="448" y1="52" x2="460" y2="52" stroke="#2563EB" stroke-width="1.5" marker-end="url(#arr)"/>
+
+          <!-- z_hat (predicted) -->
+          <rect x="462" y="33" width="62" height="38" rx="7" fill="#FEF3C7" stroke="#FCD34D" stroke-width="2"/>
+          <text x="493" y="57" text-anchor="middle" font-size="15" font-weight="700" fill="#92400E">ẑ<tspan font-size="9" dy="4">t+1</tspan></text>
+
+          <!-- ── ACTION (middle) ── -->
+          <rect x="358" y="103" width="90" height="32" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+          <text x="403" y="123" text-anchor="middle" font-size="11" fill="#475569">action<tspan font-size="8" dy="2">t</tspan></text>
+
+          <!-- action ↑ → Predictor -->
+          <line x1="403" y1="103" x2="403" y2="73" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr)"/>
+
+          <!-- ── MSE vertical ── -->
+          <line x1="493" y1="71" x2="493" y2="153" stroke="#D97706" stroke-width="2" stroke-dasharray="5,3"/>
+          <text x="506" y="117" font-size="11" font-weight="600" fill="#D97706">L₂</text>
+
+          <!-- ── BOTTOM ROW (y_center = 170) ── -->
+
+          <!-- obs_{t+1} -->
+          <rect x="2" y="151" width="68" height="38" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+          <text x="36" y="169" text-anchor="middle" font-size="11" fill="#475569">obs</text>
+          <text x="36" y="182" text-anchor="middle" font-size="8" fill="#94A3B8">état t+1</text>
+
+          <!-- obs_{t+1} → Encoder -->
+          <line x1="70" y1="170" x2="84" y2="170" stroke="#2563EB" stroke-width="1.5" marker-end="url(#arr)"/>
+
+          <!-- Encoder bottom (same weights ϕ) -->
+          <rect x="86" y="151" width="84" height="38" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.5"/>
+          <text x="128" y="173" text-anchor="middle" font-size="11" font-weight="600" fill="#2563EB">Encodeur ϕ</text>
+
+          <!-- long arrow Encoder → z_{t+1} (aligned with z_hat) -->
+          <line x1="170" y1="170" x2="459" y2="170" stroke="#2563EB" stroke-width="1.5" marker-end="url(#arr)"/>
+
+          <!-- z_{t+1} (real) -->
+          <rect x="462" y="151" width="62" height="38" rx="7" fill="#DBEAFE" stroke="#93C5FD" stroke-width="2"/>
+          <text x="493" y="175" text-anchor="middle" font-size="16" font-weight="700" fill="#1D4ED8">z<tspan font-size="9" dy="4">t+1</tspan></text>
+
+          <!-- Labels top-right -->
+          <text x="493" y="26" text-anchor="middle" font-size="9" font-weight="500" fill="#D97706">prédit</text>
+          <text x="493" y="146" text-anchor="middle" font-size="9" font-weight="500" fill="#1D4ED8">réel</text>
+        </svg>
+        <p class="diagram-caption">
+          L'encodeur ϕ est partagé entre les deux observations.
+          La loss L₂ force ẑ<sub>t+1</sub> (prédit) à se rapprocher de z<sub>t+1</sub> (réel) dans l'espace latent.
+        </p>
+      </div>
+
+      <p>
+        Ce qu'il y a d'élégant dans cette approche : le système n'apprend jamais à reconstituer
+        une image. Il apprend quelque chose de plus profond — une représentation du monde
+        qui est <em>utile pour prédire</em>. Rien de superflu, tout de fonctionnel.
+      </p>
+
+      <div class="insight-box">
+        <p>
+          Le risque principal de cette architecture s'appelle l'<strong>effondrement de représentation</strong> :
+          si l'encodeur projette tout sur le même vecteur, la loss tombe à zéro sans rien apprendre.
+          LeWM résout ce problème avec un terme de régularisation appelé <strong>SIGReg</strong>,
+          qui force les représentations latentes à suivre une distribution gaussienne.
+        </p>
+      </div>
+    </section>
+
+    <!-- ========================
+         CE PROJET
+         ======================== -->
+    <section class="reveal">
+      <p class="eyebrow">Ce projet</p>
+      <h2>Quatre actes pour comprendre de l'intérieur</h2>
+
+      <p>
+        Ce projet implémente une version minimale de LeWM sur un monde simulé :
+        une grille 10×10 avec un agent, une boîte, des murs et une cible.
+        Pas de reward, pas d'étiquettes — le modèle observe des transitions et en déduit
+        les lois du monde.
+      </p>
+
+      <p>
+        Le projet se déroule en quatre actes, chacun explorant une question distincte.
+        Le code source est disponible sur GitHub ; ici, on s'intéresse aux résultats,
+        aux visualisations, et à ce qu'ils nous apprennent.
+      </p>
+
+      <div class="acts-grid">
+
+        <a href="acte1.html" class="act-card">
+          <p class="act-number">Acte 1</p>
+          <h3>L'environnement</h3>
+          <p>
+            Présentation du monde simulé, de ses règles physiques et du dataset
+            de transitions générées pour l'entraînement.
+          </p>
+          <span class="act-badge">Démo interactive</span>
+        </a>
+
+        <a href="acte2.html" class="act-card">
+          <p class="act-number">Acte 2</p>
+          <h3>L'entraînement</h3>
+          <p>
+            Architecture JEPA, fonction de loss, et convergence du modèle.
+            Visualisez l'entraînement en temps réel.
+          </p>
+          <span class="act-badge">Courbes animées</span>
+        </a>
+
+        <a href="acte3.html" class="act-card">
+          <p class="act-number">Acte 3</p>
+          <h3>Ce que la machine a appris</h3>
+          <p>
+            L'espace latent révèle-t-il une carte mentale du monde ?
+            PCA interactive et probing des propriétés physiques.
+          </p>
+          <span class="act-badge">PCA interactive</span>
+        </a>
+
+        <a href="acte4.html" class="act-card">
+          <p class="act-number">Acte 4</p>
+          <h3>Les limites du modèle</h3>
+          <p>
+            Le rollout multi-step tient sur 20 horizons. Mais le planning échoue :
+            l'espace latent prédit bien, sans pour autant encoder la position absolue
+            avec assez de précision pour guider une décision.
+          </p>
+          <span class="act-badge">Résultats honnêtes</span>
+        </a>
+
+      </div>
+
+      <div style="margin-top:2.5rem;text-align:center">
+        <a href="conclusion.html" style="
+          display:inline-flex;align-items:center;gap:0.6rem;
+          font-size:1rem;font-weight:600;
+          color:#0F172A;text-decoration:none;
+          padding:0.85rem 2rem;
+          border:2px solid #E2E8F0;
+          border-radius:12px;
+          background:#F8FAFC;
+          transition:border-color 0.15s,background 0.15s,color 0.15s;
+        "
+        onmouseover="this.style.borderColor='#2563EB';this.style.background='#EFF6FF';this.style.color='#2563EB'"
+        onmouseout="this.style.borderColor='#E2E8F0';this.style.background='#F8FAFC';this.style.color='#0F172A'"
+        >
+          Conclusion — ce que j'ai appris &nbsp;→
+        </a>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================
+       FOOTER
+       ======================== -->
+  <footer>
+    <div class="footer-inner">
+      <span>Mini World Model — Projet personnel de recherche</span>
+      <span>
+        <a href="https://github.com/Stabadev/mini-world-model" target="_blank" rel="noopener">GitHub</a>
+        &nbsp;·&nbsp;
+        <a href="research/references/leWorldModel.pdf" target="_blank">LeWM paper</a>
+        &nbsp;·&nbsp;
+        <a href="https://ami-lab.org" target="_blank" rel="noopener">AMI Labs</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+    // Reveal on scroll
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+
+  <script src="nav.js"></script>
+</body>
+</html>
