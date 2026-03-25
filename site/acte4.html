@@ -170,28 +170,6 @@
     .solution-body h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
     .solution-body p  { font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.6; }
 
-    /* ── final quote ── */
-    .final-quote {
-      margin: 3rem 0 1rem;
-      padding: 2rem 2.5rem;
-      background: #0F172A;
-      border-radius: var(--radius-lg);
-      color: #F1F5F9;
-    }
-    .final-quote p {
-      font-size: 1.15rem;
-      font-style: italic;
-      line-height: 1.75;
-      color: #CBD5E1;
-      margin-bottom: 1rem;
-    }
-    .final-quote .fq-author {
-      font-size: 0.85rem;
-      color: #64748B;
-      font-style: normal;
-    }
-    .final-quote .fq-author a { color: #60A5FA; text-decoration: none; }
-
     /* ── lightbox ── */
     #lightbox {
       display: none;
@@ -458,12 +436,13 @@
 
       <div class="insight-box">
         <p>
-          C'est précisément le problème que le papier LeWM tente de résoudre
-          à plus grande échelle, avec des environnements robotiques réels.
-          Leur solution : un espace latent beaucoup plus grand (ViT, 192 dimensions),
-          un prédicteur transformer, et une régularisation SIGReg plus sophistiquée
-          qui force les représentations à couvrir l'espace de façon isotrope.
-          Même ainsi, le planning reste un problème ouvert.
+          Le papier LeWM s'attaque à ce problème à plus grande échelle,
+          avec des environnements robotiques réels.
+          Leur solution : un espace latent bien plus grand (ViT, 192 dimensions),
+          un prédicteur transformer, et une régularisation SIGReg qui force
+          les représentations à suivre une distribution gaussienne isotrope.
+          Résultat : le planning fonctionne — mais il nécessite une architecture
+          et une régularisation significativement plus sophistiquées que les nôtres.
         </p>
       </div>
     </section>
@@ -551,22 +530,21 @@
       </p>
 
       <p>
-        C'est exactement la critique que Yann LeCun formule à plus grande échelle :
-        les systèmes actuels apprennent à <em>imiter</em> le monde
-        sans en construire un <em>modèle orienté vers l'action</em>.
-        Ce projet, à petite échelle, en est une illustration concrète et vérifiable.
+        Ce projet suit précisément l'approche que LeCun défend comme alternative aux LLMs :
+        apprendre un modèle du monde en espace latent, sans reconstruction pixel,
+        pour pouvoir planifier. Les résultats montrent que l'idée tient —
+        mais que <strong>l'objectif d'entraînement seul ne suffit pas</strong>
+        à obtenir une représentation orientée vers l'action.
+        Il faut contraindre explicitement ce que le modèle doit retenir.
       </p>
 
-      <div class="final-quote">
+      <div class="insight-box">
         <p>
-          « La question, c'est comment faire en sorte que les machines apprennent
-          le monde en l'observant, à la manière d'un jeune enfant.
-          Un enfant n'apprend pas le monde pour le prédire —
-          il l'apprend pour agir dessus. »
+          En d'autres termes : construire un world model ne garantit pas
+          qu'il encode ce dont on a besoin pour planifier.
+          C'est la tension que le papier LeWM résout avec une architecture plus puissante —
+          et que ce projet illustre, à petite échelle, de façon tangible et mesurable.
         </p>
-        <div class="fq-author">
-          Yann LeCun — <a href="https://www.radiofrance.fr/franceinter/podcasts/l-invite-de-7h50/l-invite-de-7h50-du-mardi-10-mars-2026-6860645" target="_blank" rel="noopener">France Inter, 10 mars 2026</a>
-        </div>
       </div>
     </section>
 
