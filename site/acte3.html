@@ -27,7 +27,10 @@
     .pca-img-card img {
       width: 100%;
       display: block;
+      cursor: zoom-in;
+      transition: opacity 0.15s;
     }
+    .pca-img-card img:hover { opacity: 0.88; }
     .pca-img-caption {
       padding: 0.75rem 1rem;
       font-size: 0.8rem;
@@ -36,6 +39,52 @@
       border-top: 1px solid var(--border);
     }
     .pca-img-caption strong { color: var(--text); }
+
+    /* ── lightbox ── */
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 2rem;
+      cursor: zoom-out;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img {
+      max-width: min(90vw, 860px);
+      max-height: 75vh;
+      border-radius: var(--radius);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+      object-fit: contain;
+    }
+    #lightbox-caption {
+      margin-top: 1rem;
+      max-width: min(90vw, 860px);
+      font-size: 0.875rem;
+      color: #CBD5E1;
+      line-height: 1.6;
+      text-align: center;
+    }
+    #lightbox-caption strong { color: #F1F5F9; }
+    #lightbox-close {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.5rem;
+      font-size: 1.5rem;
+      color: #94A3B8;
+      cursor: pointer;
+      background: none;
+      border: none;
+      line-height: 1;
+      padding: 0.25rem;
+      transition: color 0.15s;
+    }
+    #lightbox-close:hover { color: #F1F5F9; }
 
     /* ── PCA variance bar ── */
     .variance-chart {
@@ -573,6 +622,13 @@
 
   </main>
 
+  <!-- LIGHTBOX -->
+  <div id="lightbox" role="dialog" aria-modal="true">
+    <button id="lightbox-close" aria-label="Fermer">✕</button>
+    <img id="lightbox-img" src="" alt="" />
+    <div id="lightbox-caption"></div>
+  </div>
+
   <footer>
     <div class="footer-inner">
       <span>Mini World Model — Projet personnel de recherche</span>
@@ -758,6 +814,33 @@
   }, { threshold: 0.3 });
   const varChart = document.querySelector('.variance-chart');
   if (varChart) varObs.observe(varChart);
+
+  // ================================================================
+  //  LIGHTBOX
+  // ================================================================
+  const lightbox    = document.getElementById('lightbox');
+  const lbImg       = document.getElementById('lightbox-img');
+  const lbCaption   = document.getElementById('lightbox-caption');
+
+  document.querySelectorAll('.pca-img-card img').forEach(img => {
+    img.addEventListener('click', () => {
+      const caption = img.closest('.pca-img-card').querySelector('.pca-img-caption');
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lbCaption.innerHTML = caption ? caption.innerHTML : '';
+      lightbox.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    });
+  });
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', e => { if (e.target === lightbox || e.target === lbImg) closeLightbox(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
   // ================================================================
   //  SCROLL REVEAL
