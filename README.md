@@ -17,6 +17,18 @@ Et ensuite on essaie de lire ce qu'il a compris. C'est là que c'est fascinant.
 
 ---
 
+## ⚠️ Note — site web en retard sur le code
+
+Le site web ([worldmodel.rogues.fr](https://worldmodel.rogues.fr)) présente les résultats
+de la version précédente du projet. Depuis, une erreur dans la génération du dataset
+d'entraînement a été corrigée : une transition manquante (pousser la boîte directement
+sur la cible) n'avait jamais été exposée au modèle. Son ajout a significativement
+modifié les résultats, notamment l'encodage de `box_on_target` (0.59 → 0.98).
+
+**Le site sera mis à jour prochainement.**
+
+---
+
 ## Le site
 
 Le projet est raconté sous forme de site web, acte par acte :
