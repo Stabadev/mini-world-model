@@ -4,3 +4,9 @@ __pycache__/
 data/
 *.pt
 *.pth
+
+# Fichiers internes — non publiés
+CLAUDE.md
+research/REPRISE.md
+site/INTRO_PROJET.txt
+site/DOCUMENT 2 VERSION PÉDAGOGIQUE.txt
