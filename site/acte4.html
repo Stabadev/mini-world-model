@@ -488,14 +488,17 @@
         <div class="solution-item">
           <div class="solution-num">3</div>
           <div class="solution-body">
-            <h3>Utiliser un espace latent plus grand</h3>
+            <h3>Changer d'architecture encodeur</h3>
             <p>
-              Avec latent_dim = 32, le modèle compresse une image 10×10 en 32 nombres.
-              L'espace latent est tellement comprimé que la quasi-totalité de la variance
-              tient en une seule dimension (PC1 = 92%). En augmentant la dimension latente
-              et en utilisant une architecture encodeur plus expressive (ViT plutôt que CNN),
-              on donnerait au modèle plus de "capacité" pour encoder des informations
-              positionnelles précises tout en gardant la dynamique.
+              Le problème n'est pas le manque de capacité : décrire un état GridWorld
+              ne requiert que 6 nombres (positions de l'agent, de la boîte, de la cible),
+              et 32 dimensions sont bien suffisantes en théorie.
+              Le PC1 = 92% ne dit pas que l'espace est trop petit —
+              il dit que le modèle n'a besoin que d'une seule direction
+              pour bien prédire le pas suivant.
+              Avec un encodeur plus expressif (ViT, attention) et une régularisation
+              plus forte (comme SIGReg), on pourrait forcer une utilisation plus équilibrée
+              de l'espace latent, et éviter que tout se concentre sur un seul axe.
             </p>
           </div>
         </div>
