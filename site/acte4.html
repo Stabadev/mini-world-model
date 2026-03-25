@@ -39,8 +39,10 @@
       padding: 1.5rem;
       margin: 2rem 0;
       box-shadow: var(--shadow);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
-    .step-chart-card canvas { display: block; width: 100%; }
+    .step-chart-card canvas { display: block; min-width: 560px; }
     .step-chart-label {
       font-size: 0.8rem;
       color: var(--text-muted);
@@ -255,6 +257,9 @@
         <li><a href="conclusion.html">Conclusion</a></li>
       </ul>
       <a href="https://github.com/Stabadev/mini-world-model" class="nav-github" target="_blank" rel="noopener">GitHub ↗</a>
+      <button class="nav-burger" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </nav>
 
@@ -750,5 +755,6 @@
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
   </script>
 
+  <script src="nav.js"></script>
 </body>
 </html>
