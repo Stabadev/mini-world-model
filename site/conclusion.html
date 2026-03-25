@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conclusion — Mini World Model</title>
+  <meta name="description" content="Ce que ce projet m'a appris — par Alexandre Rogues." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── prose perso ── */
+    .prose {
+      font-size: 1.05rem;
+      line-height: 1.85;
+      color: var(--text);
+    }
+    .prose p {
+      margin-bottom: 1.4rem;
+    }
+    .prose strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .prose em {
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    /* ── separateur de section ── */
+    .prose-section {
+      padding: 2.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .prose-section:last-of-type {
+      border-bottom: none;
+    }
+
+    /* ── citation mise en valeur ── */
+    .pull-quote {
+      margin: 2rem 0;
+      padding: 1.25rem 1.75rem;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-light);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: 1.05rem;
+      font-style: italic;
+      color: var(--text);
+      line-height: 1.75;
+    }
+
+    /* ── bloc final ── */
+    .sign-off {
+      margin: 3rem 0 1rem;
+      padding: 2rem 2.5rem;
+      background: #0F172A;
+      border-radius: var(--radius-lg);
+      color: #F1F5F9;
+    }
+    .sign-off p {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: #CBD5E1;
+      margin-bottom: 0.75rem;
+    }
+    .sign-off p:last-child { margin-bottom: 0; }
+    .sign-off a {
+      color: #60A5FA;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .sign-off a:hover { text-decoration: underline; }
+    .sign-off .author-line {
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      color: #64748B;
+    }
+
+    /* ── act nav ── */
+    .act-nav {
+      display: flex;
+      justify-content: space-between;
+      padding: 3rem 0 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    .act-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.6rem 1.25rem;
+      border: 1.5px solid var(--accent-mid);
+      border-radius: var(--radius);
+      background: var(--accent-light);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .act-nav a:hover { background: #DBEAFE; border-color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">Mini <span>World Model</span></a>
+      <ul class="nav-links">
+        <li><a href="acte1.html">Acte 1 — Environnement</a></li>
+        <li><a href="acte2.html">Acte 2 — Entraînement</a></li>
+        <li><a href="acte3.html">Acte 3 — Représentation</a></li>
+        <li><a href="acte4.html">Acte 4 — Limites</a></li>
+        <li><a href="conclusion.html" class="active">Conclusion</a></li>
+      </ul>
+      <a href="https://github.com/Stabadev/mini-world-model" class="nav-github" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <p class="eyebrow">Conclusion</p>
+      <h1>Ce que j'ai appris</h1>
+      <p class="hero-lead">
+        Ce projet est né d'une curiosité. Il s'est transformé en quelque chose de plus grand
+        que prévu — pas par son ampleur technique, mais par ce qu'il m'a obligé à comprendre.
+      </p>
+    </section>
+
+    <!-- SECTION 1 : GENESE -->
+    <section class="prose-section reveal">
+      <div class="prose">
+        <p>
+          Tout a commencé, comme souvent ces derniers temps, par des algorithmes de réseaux sociaux
+          bien trop efficaces. Mon fil d'actualité s'est rempli de contenus autour d'<strong>AMI Labs</strong>
+          et de Yann LeCun — et j'avoue que le sujet m'a immédiatement accroché.
+          L'idée qu'on pourrait construire une intelligence artificielle fondamentalement différente
+          des LLMs, une IA capable de <em>comprendre</em> son environnement plutôt que de prédire
+          le prochain token, ça méritait qu'on s'y arrête.
+        </p>
+
+        <p>
+          Utilisateur émerveillé des LLMs depuis quelques années, fasciné par l'informatique
+          depuis ma plus tendre enfance, je garde toujours un œil curieux sur ce qui bouge dans
+          le domaine. Mon parcours m'a mené d'un côté assez inattendu : après plusieurs années
+          d'enseignement des mathématiques — au collège et au lycée — j'ai suivi une formation
+          diplômante, un master Expert en Data Science. Ce projet s'inscrit dans cette continuité :
+          apprendre en faisant, et partager ce qu'on a compris.
+        </p>
+
+        <p>
+          Pour creuser le sujet JEPA et World Models, j'ai commencé par lire les papiers
+          <a href="https://arxiv.org/html/2603.19312v1" target="_blank" rel="noopener">LeWM</a>
+          et <a href="https://arxiv.org/html/2506.09985v1" target="_blank" rel="noopener">V-JEPA 2</a>.
+          De sacrés pavés. J'ai rapidement fait appel à mes deux coworkers préférés —
+          <strong>Claude et ChatGPT</strong> — avec qui j'ai eu de longs échanges,
+          posant des questions éclairantes, testant des intuitions, démêlant les concepts.
+          Et de ces conversations est née l'idée d'un petit projet de Data Science sur notebook,
+          pour ancrer tout ça dans quelque chose de concret et de mesurable.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 2 : LE PROJET -->
+    <section class="prose-section reveal">
+      <div class="prose">
+        <p>
+          Plusieurs versions ont été nécessaires pour arriver à quelque chose de cohérent.
+          Chaque itération m'a appris quelque chose : sur la façon dont on définit un "monde"
+          pour un modèle, sur l'importance des règles physiques, sur ce qu'on demande
+          exactement au réseau d'apprendre. La notion la plus importante que j'en retiens :
+        </p>
+
+        <div class="pull-quote">
+          Un world model n'apprend pas à gagner le jeu. Il apprend à y jouer —
+          dans son esprit. Dans sa représentation latente des informations
+          qu'il est capable de produire. Une sorte d'imagination virtuelle.
+        </div>
+
+        <p>
+          On lui montre le jeu. Il apprend des choses à son sujet. Et nous essayons
+          de lire cette imagination, pour vérifier qu'il a bien compris quelque chose
+          de réel. C'est ça, la sonde linéaire de l'Acte 3 : une tentative de décoder
+          ce que le modèle a retenu, sans lui avoir rien expliqué explicitement.
+        </p>
+
+        <p>
+          Le résultat est honnête : le modèle a appris des choses, certaines très clairement
+          (l'adjacence agent-boîte à 94%), d'autres à peine (la position de la cible à 59%).
+          Et surtout — comme le montre l'Acte 4 — <strong>ce qu'il a appris ne suffit pas
+          pour planifier</strong>. Il comprend la dynamique locale, mais pas l'espace global.
+          Il sait ce qui se passe au prochain pas, pas où il en est sur la carte.
+        </p>
+
+        <p>
+          On ne comprend pas tout ce qu'il a appris. Et ce qu'il a appris, dans l'état,
+          ne sert pas à grand-chose pour un vrai agent autonome.
+          Mais l'aventure valait le coup quand même.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 3 : TRANSPARENCE -->
+    <section class="prose-section reveal">
+      <div class="prose">
+        <p>
+          Je veux être transparent sur quelque chose : je n'ai pas écrit beaucoup de lignes
+          de code à la main dans ce projet. Claude et ChatGPT ont écrit l'essentiel —
+          les notebooks, le site que vous lisez en ce moment, les visualisations interactives.
+          Mais il a quand même fallu lire ce code, le comprendre, le déboguer, parfois
+          l'expliquer et le contester. Ce n'est pas rien.
+        </p>
+
+        <p>
+          J'espère aussi que mes interprétations ne sont pas trop foireuses.
+          Je suis data scientist en formation, pas chercheur en apprentissage profond.
+          Si vous repérez une erreur ou une approximation, je suis preneur.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 4 : L'IA ET LA SUITE -->
+    <section class="prose-section reveal">
+      <div class="prose">
+        <p>
+          L'IA est une chose fabuleuse, qui m'émerveille à chaque fois
+          qu'une réponse arrive à un prompt que j'ai posé.
+          Je sais qu'elle suscite beaucoup de craintes — et certaines sont légitimes.
+          Personnellement, je me dis qu'on n'arrête pas le progrès.
+          Alors si elle vous fait peur : intéressez-vous-y. Vous ne serez pas déçu.
+        </p>
+
+        <p>
+          Ce qui me frappe le plus, c'est que les LLMs — qui nous émerveillent déjà —
+          sont entraînés <em>sur du texte uniquement</em>. Ils n'ont jamais vu le monde.
+          Ils ne savent pas ce que c'est que tomber, pousser un objet,
+          sentir la résistance d'une matière. Ils raisonnent par analogie linguistique.
+        </p>
+
+        <p>
+          Alors quand je pense à ce que pourrait être un modèle monde à grande échelle —
+          une architecture fondamentalement différente, encodant directement
+          une représentation de sa réalité, une compréhension de son environnement,
+          capable de planifier dans cet espace — je n'ose pas imaginer ce qui nous attend.
+        </p>
+
+        <div class="pull-quote">
+          Quant à l'ambition de Yann LeCun de révolutionner l'IA :
+          je lui souhaite plein de succès. On n'est vraiment pas au bout de nos surprises.
+        </div>
+      </div>
+    </section>
+
+    <!-- SIGN-OFF -->
+    <div class="sign-off reveal">
+      <p>
+        Merci d'être arrivé jusqu'ici. Je reste disponible pour en discuter —
+        que ce soit sur les concepts, les choix techniques, ou juste pour échanger
+        sur ce domaine qui me passionne.
+      </p>
+      <p>
+        <a href="https://alexandre.rogues.fr" target="_blank" rel="noopener">alexandre.rogues.fr</a>
+      </p>
+      <div class="author-line">Alexandre Rogues — 2026</div>
+    </div>
+
+    <div class="act-nav">
+      <a href="acte4.html">← Acte 4 — Limites</a>
+      <a href="index.html">↩ Retour à l'accueil</a>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Mini World Model — Projet personnel de recherche</span>
+      <span>
+        <a href="https://github.com/Stabadev/mini-world-model" target="_blank" rel="noopener">GitHub</a>
+        &nbsp;·&nbsp;
+        <a href="research/references/leWorldModel.pdf" target="_blank">LeWM paper</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  </script>
+
+</body>
+</html>
